@@ -12,8 +12,7 @@ var tuiDatePicker = { exports: {} };
 var tuiTimePicker = { exports: {} };
 /*!
  * TOAST UI Time Picker
- * @version 2.1.4
- * @author NHN FE Development Lab <dl_javascript@nhn.com>
+ * @version 2.1.6
  * @license MIT
  */
 (function(module, exports) {
@@ -308,7 +307,11 @@ var tuiTimePicker = { exports: {} };
           if (helperCount) {
             throw Error(helperKeyword + " needs {{/" + helperKeyword + "}} expression.");
           }
-          sourcesToEnd[startBlockIndex] = executeBlockHelper(sourcesToEnd[startBlockIndex].split(" ").slice(1), extractSourcesInsideBlock(sourcesToEnd, startBlockIndex, endBlockIndex), context);
+          sourcesToEnd[startBlockIndex] = executeBlockHelper(
+            sourcesToEnd[startBlockIndex].split(" ").slice(1),
+            extractSourcesInsideBlock(sourcesToEnd, startBlockIndex, endBlockIndex),
+            context
+          );
           return sourcesToEnd;
         }
         function handleExpression(exps, context) {
@@ -912,394 +915,410 @@ var tuiTimePicker = { exports: {} };
         var END_NUMBER_OF_HOUR = 23;
         var END_NUMBER_OF_HOUR_WITH_MERIDIEM = 12;
         var mergeDefaultOptions = function(options) {
-          return extend2({
-            language: "en",
-            initialHour: 0,
-            initialMinute: 0,
-            showMeridiem: true,
-            inputType: "selectbox",
-            hourStep: 1,
-            minuteStep: 1,
-            meridiemPosition: "right",
-            format: "h:m",
-            disabledHours: [],
-            disabledMinutes: {},
-            usageStatistics: true
-          }, options);
+          return extend2(
+            {
+              language: "en",
+              initialHour: 0,
+              initialMinute: 0,
+              showMeridiem: true,
+              inputType: "selectbox",
+              hourStep: 1,
+              minuteStep: 1,
+              meridiemPosition: "right",
+              format: "h:m",
+              disabledHours: [],
+              disabledMinutes: {},
+              usageStatistics: true
+            },
+            options
+          );
         };
-        var TimePicker = defineClass({
-          static: {
-            localeTexts
-          },
-          init: function(container, options) {
-            options = mergeDefaultOptions(options);
-            this.id = util.getUniqueId();
-            this.container = isHTMLNode(container) ? container : document.querySelector(container);
-            this.element = null;
-            this.meridiemElement = null;
-            this.amEl = null;
-            this.pmEl = null;
-            this.showMeridiem = options.showMeridiem;
-            this.meridiemPosition = options.meridiemPosition;
-            this.hourInput = null;
-            this.minuteInput = null;
-            this.hour = options.initialHour;
-            this.minute = options.initialMinute;
-            this.hourStep = options.hourStep;
-            this.minuteStep = options.minuteStep;
-            this.disabledHours = options.disabledHours;
-            this.disabledMinutes = options.disabledMinutes;
-            this.inputType = options.inputType;
-            this.localeText = localeTexts[options.language];
-            this.format = this.getValidTimeFormat(options.format);
-            this.render();
-            this.setEvents();
-            if (options.usageStatistics) {
-              util.sendHostName();
-            }
-          },
-          setEvents: function() {
-            this.hourInput.on("change", this.onChangeTimeInput, this);
-            this.minuteInput.on("change", this.onChangeTimeInput, this);
-            if (this.showMeridiem) {
-              if (this.inputType === INPUT_TYPE_SELECTBOX) {
-                on2(this.meridiemElement.querySelector("select"), "change", this.onChangeMeridiem, this);
-              } else if (this.inputType === INPUT_TYPE_SPINBOX) {
-                on2(this.meridiemElement, "click", this.onChangeMeridiem, this);
+        var TimePicker = defineClass(
+          {
+            static: {
+              localeTexts
+            },
+            init: function(container, options) {
+              options = mergeDefaultOptions(options);
+              this.id = util.getUniqueId();
+              this.container = isHTMLNode(container) ? container : document.querySelector(container);
+              this.element = null;
+              this.meridiemElement = null;
+              this.amEl = null;
+              this.pmEl = null;
+              this.showMeridiem = options.showMeridiem;
+              this.meridiemPosition = options.meridiemPosition;
+              this.hourInput = null;
+              this.minuteInput = null;
+              this.hour = options.initialHour;
+              this.minute = options.initialMinute;
+              this.hourStep = options.hourStep;
+              this.minuteStep = options.minuteStep;
+              this.disabledHours = options.disabledHours;
+              this.disabledMinutes = options.disabledMinutes;
+              this.inputType = options.inputType;
+              this.localeText = localeTexts[options.language];
+              this.format = this.getValidTimeFormat(options.format);
+              this.render();
+              this.setEvents();
+              if (options.usageStatistics) {
+                util.sendHostName();
               }
-            }
-          },
-          removeEvents: function() {
-            this.off();
-            this.hourInput.destroy();
-            this.minuteInput.destroy();
-            if (this.showMeridiem) {
-              if (this.inputType === INPUT_TYPE_SELECTBOX) {
-                off(this.meridiemElement.querySelector("select"), "change", this.onChangeMeridiem, this);
-              } else if (this.inputType === INPUT_TYPE_SPINBOX) {
-                off(this.meridiemElement, "click", this.onChangeMeridiem, this);
+            },
+            setEvents: function() {
+              this.hourInput.on("change", this.onChangeTimeInput, this);
+              this.minuteInput.on("change", this.onChangeTimeInput, this);
+              if (this.showMeridiem) {
+                if (this.inputType === INPUT_TYPE_SELECTBOX) {
+                  on2(this.meridiemElement.querySelector("select"), "change", this.onChangeMeridiem, this);
+                } else if (this.inputType === INPUT_TYPE_SPINBOX) {
+                  on2(this.meridiemElement, "click", this.onChangeMeridiem, this);
+                }
               }
-            }
-          },
-          render: function() {
-            var context = {
-              showMeridiem: this.showMeridiem,
-              isSpinbox: this.inputType === "spinbox"
-            };
-            if (this.showMeridiem) {
-              extend2(context, {
-                meridiemElement: this.makeMeridiemHTML()
-              });
-            }
-            if (this.element) {
-              removeElement(this.element);
-            }
-            this.container.innerHTML = tmpl(context);
-            this.element = this.container.firstChild;
-            this.renderTimeInputs();
-            if (this.showMeridiem) {
-              this.setMeridiemElement();
-            }
-          },
-          setMeridiemElement: function() {
-            if (this.meridiemPosition === "left") {
-              addClass(this.element, CLASS_NAME_LEFT_MERIDIEM);
-            }
-            this.meridiemElement = this.element.querySelector(SELECTOR_MERIDIEM_ELEMENT);
-            this.amEl = this.meridiemElement.querySelector('[value="AM"]');
-            this.pmEl = this.meridiemElement.querySelector('[value="PM"]');
-            this.syncToMeridiemElements();
-          },
-          makeMeridiemHTML: function() {
-            var localeText = this.localeText;
-            return meridiemTmpl({
-              am: localeText.am,
-              pm: localeText.pm,
-              radioId: this.id,
-              isSpinbox: this.inputType === "spinbox"
-            });
-          },
-          renderTimeInputs: function() {
-            var hour = this.hour;
-            var showMeridiem = this.showMeridiem;
-            var hourElement = this.element.querySelector(SELECTOR_HOUR_ELEMENT);
-            var minuteElement = this.element.querySelector(SELECTOR_MINUTE_ELEMENT);
-            var BoxComponent = this.inputType.toLowerCase() === "selectbox" ? Selectbox : Spinbox;
-            var formatExplode = this.format.split(":");
-            var hourItems = this.getHourItems();
-            if (showMeridiem) {
-              hour = util.getMeridiemHour(hour);
-            }
-            this.hourInput = new BoxComponent(hourElement, {
-              initialValue: hour,
-              items: hourItems,
-              format: formatExplode[0],
-              disabledItems: this.makeDisabledStatItems(hourItems)
-            });
-            this.minuteInput = new BoxComponent(minuteElement, {
-              initialValue: this.minute,
-              items: this.getMinuteItems(),
-              format: formatExplode[1]
-            });
-          },
-          makeDisabledStatItems: function(hourItems) {
-            var result = [];
-            var disabledHours = this.disabledHours.slice();
-            if (this.showMeridiem) {
-              disabledHours = this.meridiemableTime(disabledHours);
-            }
-            forEachArray2(hourItems, function(hour) {
-              result.push(inArray(hour, disabledHours) >= 0);
-            });
-            return result;
-          },
-          meridiemableTime: function(disabledHours) {
-            var diffHour = 0;
-            var startHour = 0;
-            var endHour = 11;
-            var result = [];
-            if (this.hour >= 12) {
-              diffHour = 12;
-              startHour = 12;
-              endHour = 23;
-            }
-            forEachArray2(disabledHours, function(hour) {
-              if (hour >= startHour && hour <= endHour) {
-                result.push(hour - diffHour === 0 ? 12 : hour - diffHour);
+            },
+            removeEvents: function() {
+              this.off();
+              this.hourInput.destroy();
+              this.minuteInput.destroy();
+              if (this.showMeridiem) {
+                if (this.inputType === INPUT_TYPE_SELECTBOX) {
+                  off(this.meridiemElement.querySelector("select"), "change", this.onChangeMeridiem, this);
+                } else if (this.inputType === INPUT_TYPE_SPINBOX) {
+                  off(this.meridiemElement, "click", this.onChangeMeridiem, this);
+                }
               }
-            });
-            return result;
-          },
-          getValidTimeFormat: function(format) {
-            if (!format.match(/^[h]{1,2}:[m]{1,2}$/i)) {
-              return "h:m";
-            }
-            return format.toLowerCase();
-          },
-          syncToMeridiemElements: function() {
-            var selectedEl = this.hour >= 12 ? this.pmEl : this.amEl;
-            var notSelectedEl = selectedEl === this.pmEl ? this.amEl : this.pmEl;
-            selectedEl.setAttribute("selected", true);
-            selectedEl.setAttribute("checked", true);
-            addClass(selectedEl, CLASS_NAME_CHECKED);
-            notSelectedEl.removeAttribute("selected");
-            notSelectedEl.removeAttribute("checked");
-            removeClass(notSelectedEl, CLASS_NAME_CHECKED);
-          },
-          syncToInputs: function() {
-            var hour = this.hour;
-            var minute = this.minute;
-            if (this.showMeridiem) {
-              hour = util.getMeridiemHour(hour);
-            }
-            this.hourInput.setValue(hour);
-            this.minuteInput.setValue(minute);
-          },
-          onChangeMeridiem: function(ev) {
-            var hour = this.hour;
-            var target = util.getTarget(ev);
-            if (target.value && closest(target, SELECTOR_MERIDIEM_ELEMENT)) {
-              hour = this.to24Hour(target.value === "PM", hour);
-              this.setTime(hour, this.minute);
-              this.setDisabledHours();
-              this.setDisabledMinutes(hour);
-            }
-          },
-          onChangeTimeInput: function() {
-            var hour = this.hourInput.getValue();
-            var minute = this.minuteInput.getValue();
-            var isPM = this.hour >= 12;
-            if (this.showMeridiem) {
-              hour = this.to24Hour(isPM, hour);
-            }
-            this.setTime(hour, minute);
-            this.setDisabledMinutes(hour);
-          },
-          to24Hour: function(isPM, hour) {
-            hour %= 12;
-            if (isPM) {
-              hour += 12;
-            }
-            return hour;
-          },
-          setDisabledHours: function() {
-            var hourItems = this.getHourItems();
-            var disabledItems = this.makeDisabledStatItems(hourItems);
-            this.hourInput.setDisabledItems(disabledItems);
-          },
-          setDisabledMinutes: function(hour) {
-            var disabledItems;
-            disabledItems = this.disabledMinutes[hour] || [];
-            this.minuteInput.setDisabledItems(disabledItems);
-          },
-          getHourItems: function() {
-            var step = this.hourStep;
-            return this.showMeridiem ? util.getRangeArr(1, 12, step) : util.getRangeArr(0, 23, step);
-          },
-          getMinuteItems: function() {
-            return util.getRangeArr(0, 59, this.minuteStep);
-          },
-          validItems: function(hour, minute) {
-            if (!isNumber2(hour) || !isNumber2(minute)) {
-              return false;
-            }
-            if (this.showMeridiem) {
-              hour = util.getMeridiemHour(hour);
-            }
-            return inArray(hour, this.getHourItems()) > -1 && inArray(minute, this.getMinuteItems()) > -1;
-          },
-          setHourStep: function(step) {
-            this.hourStep = step;
-            this.hourInput.fire("changeItems", this.getHourItems());
-          },
-          getHourStep: function() {
-            return this.hourStep;
-          },
-          setMinuteStep: function(step) {
-            this.minuteStep = step;
-            this.minuteInput.fire("changeItems", this.getMinuteItems());
-          },
-          getMinuteStep: function() {
-            return this.minuteStep;
-          },
-          show: function() {
-            removeClass(this.element, CLASS_NAME_HIDDEN);
-          },
-          hide: function() {
-            addClass(this.element, CLASS_NAME_HIDDEN);
-          },
-          setHour: function(hour) {
-            return this.setTime(hour, this.minute);
-          },
-          setMinute: function(minute) {
-            return this.setTime(this.hour, minute);
-          },
-          setTime: function(hour, minute) {
-            if (!this.validItems(hour, minute)) {
-              return;
-            }
-            this.hour = hour;
-            this.minute = minute;
-            this.syncToInputs();
-            if (this.showMeridiem) {
+            },
+            render: function() {
+              var context = {
+                showMeridiem: this.showMeridiem,
+                isSpinbox: this.inputType === "spinbox"
+              };
+              if (this.showMeridiem) {
+                extend2(context, {
+                  meridiemElement: this.makeMeridiemHTML()
+                });
+              }
+              if (this.element) {
+                removeElement(this.element);
+              }
+              this.container.innerHTML = tmpl(context);
+              this.element = this.container.firstChild;
+              this.renderTimeInputs();
+              if (this.showMeridiem) {
+                this.setMeridiemElement();
+              }
+            },
+            setMeridiemElement: function() {
+              if (this.meridiemPosition === "left") {
+                addClass(this.element, CLASS_NAME_LEFT_MERIDIEM);
+              }
+              this.meridiemElement = this.element.querySelector(SELECTOR_MERIDIEM_ELEMENT);
+              this.amEl = this.meridiemElement.querySelector('[value="AM"]');
+              this.pmEl = this.meridiemElement.querySelector('[value="PM"]');
               this.syncToMeridiemElements();
-            }
-            this.fire("change", {
-              hour: this.hour,
-              minute: this.minute
-            });
-          },
-          setRange: function(begin, end) {
-            var beginHour = begin.hour;
-            var beginMin = begin.minute;
-            var endHour, endMin;
-            if (!this.isValidRange(begin, end)) {
-              return;
-            }
-            if (end) {
-              endHour = end.hour;
-              endMin = end.minute;
-            }
-            this.setRangeHour(beginHour, endHour);
-            this.setRangeMinute(beginHour, beginMin, endHour, endMin);
-            this.applyRange(beginHour, beginMin, endHour);
-          },
-          setRangeHour: function(beginHour, endHour) {
-            var disabledHours = util.getRangeArr(START_NUMBER_OF_TIME, beginHour - 1);
-            if (endHour) {
-              disabledHours = disabledHours.concat(util.getRangeArr(endHour + 1, END_NUMBER_OF_HOUR));
-            }
-            this.disabledHours = disabledHours.slice();
-          },
-          setRangeMinute: function(beginHour, beginMin, endHour, endMin) {
-            var disabledMinRanges = [];
-            if (!beginHour && !beginMin) {
-              return;
-            }
-            disabledMinRanges.push({
-              begin: START_NUMBER_OF_TIME,
-              end: beginMin
-            });
-            if (endHour && endMin) {
-              disabledMinRanges.push({
-                begin: endMin,
-                end: END_NUMBER_OF_MINUTE
+            },
+            makeMeridiemHTML: function() {
+              var localeText = this.localeText;
+              return meridiemTmpl({
+                am: localeText.am,
+                pm: localeText.pm,
+                radioId: this.id,
+                isSpinbox: this.inputType === "spinbox"
               });
-              if (beginHour === endHour) {
-                this.disabledMinutes[beginHour] = util.getDisabledMinuteArr(disabledMinRanges, this.minuteStep).slice();
+            },
+            renderTimeInputs: function() {
+              var hour = this.hour;
+              var showMeridiem = this.showMeridiem;
+              var hourElement = this.element.querySelector(SELECTOR_HOUR_ELEMENT);
+              var minuteElement = this.element.querySelector(SELECTOR_MINUTE_ELEMENT);
+              var BoxComponent = this.inputType.toLowerCase() === "selectbox" ? Selectbox : Spinbox;
+              var formatExplode = this.format.split(":");
+              var hourItems = this.getHourItems();
+              if (showMeridiem) {
+                hour = util.getMeridiemHour(hour);
+              }
+              this.hourInput = new BoxComponent(hourElement, {
+                initialValue: hour,
+                items: hourItems,
+                format: formatExplode[0],
+                disabledItems: this.makeDisabledStatItems(hourItems)
+              });
+              this.minuteInput = new BoxComponent(minuteElement, {
+                initialValue: this.minute,
+                items: this.getMinuteItems(),
+                format: formatExplode[1]
+              });
+            },
+            makeDisabledStatItems: function(hourItems) {
+              var result = [];
+              var disabledHours = this.disabledHours.slice();
+              if (this.showMeridiem) {
+                disabledHours = this.meridiemableTime(disabledHours);
+              }
+              forEachArray2(hourItems, function(hour) {
+                result.push(inArray(hour, disabledHours) >= 0);
+              });
+              return result;
+            },
+            meridiemableTime: function(disabledHours) {
+              var diffHour = 0;
+              var startHour = 0;
+              var endHour = 11;
+              var result = [];
+              if (this.hour >= 12) {
+                diffHour = 12;
+                startHour = 12;
+                endHour = 23;
+              }
+              forEachArray2(disabledHours, function(hour) {
+                if (hour >= startHour && hour <= endHour) {
+                  result.push(hour - diffHour === 0 ? 12 : hour - diffHour);
+                }
+              });
+              return result;
+            },
+            getValidTimeFormat: function(format) {
+              if (!format.match(/^[h]{1,2}:[m]{1,2}$/i)) {
+                return "h:m";
+              }
+              return format.toLowerCase();
+            },
+            syncToMeridiemElements: function() {
+              var selectedEl = this.hour >= 12 ? this.pmEl : this.amEl;
+              var notSelectedEl = selectedEl === this.pmEl ? this.amEl : this.pmEl;
+              selectedEl.setAttribute("selected", true);
+              selectedEl.setAttribute("checked", true);
+              addClass(selectedEl, CLASS_NAME_CHECKED);
+              notSelectedEl.removeAttribute("selected");
+              notSelectedEl.removeAttribute("checked");
+              removeClass(notSelectedEl, CLASS_NAME_CHECKED);
+            },
+            syncToInputs: function() {
+              var hour = this.hour;
+              var minute = this.minute;
+              if (this.showMeridiem) {
+                hour = util.getMeridiemHour(hour);
+              }
+              this.hourInput.setValue(hour, true);
+              this.minuteInput.setValue(minute, true);
+            },
+            onChangeMeridiem: function(ev) {
+              var hour = this.hour;
+              var target = util.getTarget(ev);
+              if (target.value && closest(target, SELECTOR_MERIDIEM_ELEMENT)) {
+                hour = this.to24Hour(target.value === "PM", hour);
+                this.setTime(hour, this.minute);
+                this.setDisabledHours();
+                this.setDisabledMinutes(hour);
+              }
+            },
+            onChangeTimeInput: function() {
+              var hour = this.hourInput.getValue();
+              var minute = this.minuteInput.getValue();
+              var isPM = this.hour >= 12;
+              if (this.showMeridiem) {
+                hour = this.to24Hour(isPM, hour);
+              }
+              this.setTime(hour, minute);
+              this.setDisabledMinutes(hour);
+            },
+            to24Hour: function(isPM, hour) {
+              hour %= 12;
+              if (isPM) {
+                hour += 12;
+              }
+              return hour;
+            },
+            setDisabledHours: function() {
+              var hourItems = this.getHourItems();
+              var disabledItems = this.makeDisabledStatItems(hourItems);
+              this.hourInput.setDisabledItems(disabledItems);
+            },
+            setDisabledMinutes: function(hour) {
+              var disabledItems;
+              disabledItems = this.disabledMinutes[hour] || [];
+              this.minuteInput.setDisabledItems(disabledItems);
+            },
+            getHourItems: function() {
+              var step = this.hourStep;
+              return this.showMeridiem ? util.getRangeArr(1, 12, step) : util.getRangeArr(0, 23, step);
+            },
+            getMinuteItems: function() {
+              return util.getRangeArr(0, 59, this.minuteStep);
+            },
+            validItems: function(hour, minute) {
+              if (!isNumber2(hour) || !isNumber2(minute)) {
+                return false;
+              }
+              if (this.showMeridiem) {
+                hour = util.getMeridiemHour(hour);
+              }
+              return inArray(hour, this.getHourItems()) > -1 && inArray(minute, this.getMinuteItems()) > -1;
+            },
+            setHourStep: function(step) {
+              this.hourStep = step;
+              this.hourInput.fire("changeItems", this.getHourItems());
+            },
+            getHourStep: function() {
+              return this.hourStep;
+            },
+            setMinuteStep: function(step) {
+              this.minuteStep = step;
+              this.minuteInput.fire("changeItems", this.getMinuteItems());
+            },
+            getMinuteStep: function() {
+              return this.minuteStep;
+            },
+            show: function() {
+              removeClass(this.element, CLASS_NAME_HIDDEN);
+            },
+            hide: function() {
+              addClass(this.element, CLASS_NAME_HIDDEN);
+            },
+            setHour: function(hour) {
+              return this.setTime(hour, this.minute);
+            },
+            setMinute: function(minute) {
+              return this.setTime(this.hour, minute);
+            },
+            setTime: function(hour, minute, silent) {
+              if (!this.validItems(hour, minute)) {
                 return;
               }
-              this.disabledMinutes[endHour] = util.getDisabledMinuteArr([disabledMinRanges[1]], this.minuteStep).slice();
-            }
-            this.disabledMinutes[beginHour] = util.getDisabledMinuteArr([disabledMinRanges[0]], this.minuteStep).slice();
-          },
-          applyRange: function(beginHour, beginMin, endHour) {
-            var targetHour = beginHour;
-            var targetMinute = Math.ceil(beginMin / this.minuteStep) * this.minuteStep;
-            if (this.isLaterThanSetTime(beginHour, beginMin)) {
-              if (this.hourStep !== 1 && beginHour % this.hourStep !== 1) {
-                targetHour = beginHour + beginHour % this.hourStep + 1;
-                targetMinute = 0;
+              this.hour = hour;
+              this.minute = minute;
+              this.syncToInputs();
+              if (this.showMeridiem) {
+                this.syncToMeridiemElements();
               }
-              this.setTime(targetHour, targetMinute);
-            }
-            this.setDisabledHours();
-            if (this.showMeridiem) {
-              this.syncToMeridiemElements();
-              util.setDisabled(this.amEl, beginHour >= END_NUMBER_OF_HOUR_WITH_MERIDIEM);
-              util.setDisabled(this.pmEl, endHour < END_NUMBER_OF_HOUR_WITH_MERIDIEM);
-            }
-          },
-          resetMinuteRange: function() {
-            var i2;
-            this.disabledMinutes = {};
-            for (i2 = 0; i2 <= END_NUMBER_OF_HOUR; i2 += 1) {
+              if (!silent) {
+                this.fire("change", {
+                  hour: this.hour,
+                  minute: this.minute
+                });
+              }
+            },
+            setRange: function(begin, end) {
+              var beginHour = begin.hour;
+              var beginMin = begin.minute;
+              var endHour, endMin;
+              if (!this.isValidRange(begin, end)) {
+                return;
+              }
+              if (end) {
+                endHour = end.hour;
+                endMin = end.minute;
+              }
+              this.setRangeHour(beginHour, endHour);
+              this.setRangeMinute(beginHour, beginMin, endHour, endMin);
+              this.applyRange(beginHour, beginMin, endHour);
+            },
+            setRangeHour: function(beginHour, endHour) {
+              var disabledHours = util.getRangeArr(START_NUMBER_OF_TIME, beginHour - 1);
+              if (endHour) {
+                disabledHours = disabledHours.concat(util.getRangeArr(endHour + 1, END_NUMBER_OF_HOUR));
+              }
+              this.disabledHours = disabledHours.slice();
+            },
+            setRangeMinute: function(beginHour, beginMin, endHour, endMin) {
+              var disabledMinRanges = [];
+              if (!beginHour && !beginMin) {
+                return;
+              }
+              disabledMinRanges.push({
+                begin: START_NUMBER_OF_TIME,
+                end: beginMin
+              });
+              if (endHour && endMin) {
+                disabledMinRanges.push({
+                  begin: endMin,
+                  end: END_NUMBER_OF_MINUTE
+                });
+                if (beginHour === endHour) {
+                  this.disabledMinutes[beginHour] = util.getDisabledMinuteArr(disabledMinRanges, this.minuteStep).slice();
+                  return;
+                }
+                this.disabledMinutes[endHour] = util.getDisabledMinuteArr([disabledMinRanges[1]], this.minuteStep).slice();
+              }
+              this.disabledMinutes[beginHour] = util.getDisabledMinuteArr([disabledMinRanges[0]], this.minuteStep).slice();
+            },
+            applyRange: function(beginHour, beginMin, endHour) {
+              var targetMinuteIndex = Math.ceil(beginMin / this.minuteStep);
+              var targetHour = beginHour;
+              var targetMinute = targetMinuteIndex * this.minuteStep;
+              var diffFromSelectableMinute;
+              if (this.isLaterThanSetTime(beginHour, beginMin)) {
+                if (this.disabledMinutes[targetHour][targetMinuteIndex]) {
+                  diffFromSelectableMinute = this.disabledMinutes[targetHour].slice(targetMinuteIndex).findIndex(function(isMinuteDisabled) {
+                    return !isMinuteDisabled;
+                  }) * this.minuteStep;
+                  targetMinute = diffFromSelectableMinute >= 0 ? targetMinute + diffFromSelectableMinute : 60;
+                }
+                if (this.hourStep !== 1 && beginHour % this.hourStep !== 1 || targetMinute >= 60) {
+                  targetHour = beginHour + beginHour % this.hourStep + 1;
+                  targetMinute = 0;
+                }
+                this.setTime(targetHour, targetMinute);
+              }
+              this.setDisabledHours();
               this.setDisabledMinutes(this.hour);
+              if (this.showMeridiem) {
+                this.syncToMeridiemElements();
+                util.setDisabled(this.amEl, beginHour >= END_NUMBER_OF_HOUR_WITH_MERIDIEM);
+                util.setDisabled(this.pmEl, endHour < END_NUMBER_OF_HOUR_WITH_MERIDIEM);
+              }
+            },
+            resetMinuteRange: function() {
+              var i2;
+              this.disabledMinutes = {};
+              for (i2 = 0; i2 <= END_NUMBER_OF_HOUR; i2 += 1) {
+                this.setDisabledMinutes(this.hour);
+              }
+            },
+            isValidRange: function(begin, end) {
+              var beginHour = begin.hour;
+              var beginMin = begin.minute;
+              var endHour, endMin;
+              if (!this.isValidTime(beginHour, beginMin)) {
+                return false;
+              }
+              if (!end) {
+                return true;
+              }
+              endHour = end.hour;
+              endMin = end.minute;
+              return this.isValidTime(endHour, endMin) && this.compareTimes(begin, end) > 0;
+            },
+            isValidTime: function(hour, minute) {
+              return hour >= START_NUMBER_OF_TIME && hour <= END_NUMBER_OF_HOUR && minute >= START_NUMBER_OF_TIME && minute <= END_NUMBER_OF_MINUTE;
+            },
+            isLaterThanSetTime: function(hour, minute) {
+              return hour > this.hour || hour === this.hour && minute > this.minute;
+            },
+            compareTimes: function(begin, end) {
+              var first2 = new Date(0);
+              var second = new Date(0);
+              first2.setHours(begin.hour, begin.minute);
+              second.setHours(end.hour, end.minute);
+              return second.getTime() - first2.getTime();
+            },
+            getHour: function() {
+              return this.hour;
+            },
+            getMinute: function() {
+              return this.minute;
+            },
+            changeLanguage: function(language) {
+              this.localeText = localeTexts[language];
+              this.render();
+            },
+            destroy: function() {
+              this.removeEvents();
+              removeElement(this.element);
+              this.container = this.showMeridiem = this.hourInput = this.minuteInput = this.hour = this.minute = this.inputType = this.element = this.meridiemElement = this.amEl = this.pmEl = null;
             }
-          },
-          isValidRange: function(begin, end) {
-            var beginHour = begin.hour;
-            var beginMin = begin.minute;
-            var endHour, endMin;
-            if (!this.isValidTime(beginHour, beginMin)) {
-              return false;
-            }
-            if (!end) {
-              return true;
-            }
-            endHour = end.hour;
-            endMin = end.minute;
-            return this.isValidTime(endHour, endMin) && this.compareTimes(begin, end) > 0;
-          },
-          isValidTime: function(hour, minute) {
-            return hour >= START_NUMBER_OF_TIME && hour <= END_NUMBER_OF_HOUR && minute >= START_NUMBER_OF_TIME && minute <= END_NUMBER_OF_MINUTE;
-          },
-          isLaterThanSetTime: function(hour, minute) {
-            return hour > this.hour || hour === this.hour && minute > this.minute;
-          },
-          compareTimes: function(begin, end) {
-            var first2 = new Date(0);
-            var second = new Date(0);
-            first2.setHours(begin.hour, begin.minute);
-            second.setHours(end.hour, end.minute);
-            return second.getTime() - first2.getTime();
-          },
-          getHour: function() {
-            return this.hour;
-          },
-          getMinute: function() {
-            return this.minute;
-          },
-          changeLanguage: function(language) {
-            this.localeText = localeTexts[language];
-            this.render();
-          },
-          destroy: function() {
-            this.removeEvents();
-            removeElement(this.element);
-            this.container = this.showMeridiem = this.hourInput = this.minuteInput = this.hour = this.minute = this.inputType = this.element = this.meridiemElement = this.amEl = this.pmEl = null;
           }
-        });
+        );
         CustomEvents2.mixin(TimePicker);
         module2.exports = TimePicker;
       },
@@ -1452,141 +1471,152 @@ var tuiTimePicker = { exports: {} };
         var tmpl = __webpack_require__(37);
         var SELECTOR_UP_BUTTON = ".tui-timepicker-btn-up";
         var SELECTOR_DOWN_BUTTON = ".tui-timepicker-btn-down";
-        var Spinbox = defineClass({
-          init: function(container, options) {
-            options = extend2({
-              items: []
-            }, options);
-            this._container = isHTMLNode(container) ? container : document.querySelector(container);
-            this._element = null;
-            this._inputElement = null;
-            this._items = options.items;
-            this._disabledItems = options.disabledItems || [];
-            this._selectedIndex = Math.max(0, inArray(options.initialValue, this._items));
-            this._format = options.format;
-            this._render();
-            this._setEvents();
-          },
-          _render: function() {
-            var index = inArray(this.getValue(), this._items);
-            var context;
-            if (this._disabledItems[index]) {
-              this._selectedIndex = this._findEnabledIndex();
-            }
-            context = {
-              maxLength: this._getMaxLength(),
-              initialValue: this.getValue(),
-              format: this._format,
-              formatTime: util.formatTime
-            };
-            this._container.innerHTML = tmpl(context);
-            this._element = this._container.firstChild;
-            this._inputElement = this._element.querySelector("input");
-          },
-          _findEnabledIndex: function() {
-            return inArray(false, this._disabledItems);
-          },
-          _getMaxLength: function() {
-            var lengths = [];
-            forEachArray2(this._items, function(item) {
-              lengths.push(String(item).length);
-            });
-            return Math.max.apply(null, lengths);
-          },
-          setDisabledItems: function(disabledItems) {
-            this._disabledItems = disabledItems;
-            this._changeToInputValue();
-          },
-          _setEvents: function() {
-            on2(this._container, "click", this._onClickHandler, this);
-            on2(this._inputElement, "keydown", this._onKeydownInputElement, this);
-            on2(this._inputElement, "change", this._onChangeHandler, this);
-            this.on("changeItems", function(items) {
-              this._items = items;
+        var Spinbox = defineClass(
+          {
+            init: function(container, options) {
+              options = extend2(
+                {
+                  items: []
+                },
+                options
+              );
+              this._container = isHTMLNode(container) ? container : document.querySelector(container);
+              this._element = null;
+              this._inputElement = null;
+              this._items = options.items;
+              this._disabledItems = options.disabledItems || [];
+              this._selectedIndex = Math.max(0, inArray(options.initialValue, this._items));
+              this._format = options.format;
               this._render();
-            }, this);
-          },
-          _removeEvents: function() {
-            this.off();
-            off(this._container, "click", this._onClickHandler, this);
-            off(this._inputElement, "keydown", this._onKeydownInputElement, this);
-            off(this._inputElement, "change", this._onChangeHandler, this);
-          },
-          _onClickHandler: function(ev) {
-            var target = util.getTarget(ev);
-            if (closest(target, SELECTOR_DOWN_BUTTON)) {
-              this._setNextValue(true);
-            } else if (closest(target, SELECTOR_UP_BUTTON)) {
-              this._setNextValue(false);
-            }
-          },
-          _setNextValue: function(isDown) {
-            var index = this._selectedIndex;
-            if (isDown) {
-              index = index ? index - 1 : this._items.length - 1;
-            } else {
-              index = index < this._items.length - 1 ? index + 1 : 0;
-            }
-            if (this._disabledItems[index]) {
-              this._selectedIndex = index;
-              this._setNextValue(isDown);
-            } else {
-              this.setValue(this._items[index]);
-            }
-          },
-          _onKeydownInputElement: function(ev) {
-            var keyCode = ev.which || ev.keyCode;
-            var isDown;
-            if (closest(util.getTarget(ev), "input")) {
-              switch (keyCode) {
-                case 38:
-                  isDown = false;
-                  break;
-                case 40:
-                  isDown = true;
-                  break;
-                default:
-                  return;
+              this._setEvents();
+            },
+            _render: function() {
+              var index = inArray(this.getValue(), this._items);
+              var context;
+              if (this._disabledItems[index]) {
+                this._selectedIndex = this._findEnabledIndex();
               }
-              this._setNextValue(isDown);
-            }
-          },
-          _onChangeHandler: function(ev) {
-            if (closest(util.getTarget(ev), "input")) {
-              this._changeToInputValue();
-            }
-          },
-          _changeToInputValue: function() {
-            var newValue = Number(this._inputElement.value);
-            var newIndex = inArray(newValue, this._items);
-            if (this._disabledItems[newIndex]) {
-              newIndex = this._findEnabledIndex();
-              newValue = this._items[newIndex];
-            } else if (newIndex === this._selectedIndex) {
-              return;
-            }
-            if (newIndex === -1) {
-              this.setValue(this._items[this._selectedIndex]);
-            } else {
-              this._selectedIndex = newIndex;
-              this.fire("change", {
-                value: newValue
+              context = {
+                maxLength: this._getMaxLength(),
+                initialValue: this.getValue(),
+                format: this._format,
+                formatTime: util.formatTime
+              };
+              this._container.innerHTML = tmpl(context);
+              this._element = this._container.firstChild;
+              this._inputElement = this._element.querySelector("input");
+            },
+            _findEnabledIndex: function() {
+              return inArray(false, this._disabledItems);
+            },
+            _getMaxLength: function() {
+              var lengths = [];
+              forEachArray2(this._items, function(item) {
+                lengths.push(String(item).length);
               });
+              return Math.max.apply(null, lengths);
+            },
+            setDisabledItems: function(disabledItems) {
+              this._disabledItems = disabledItems;
+              this._changeToInputValue();
+            },
+            _setEvents: function() {
+              on2(this._container, "click", this._onClickHandler, this);
+              on2(this._inputElement, "keydown", this._onKeydownInputElement, this);
+              on2(this._inputElement, "change", this._onChangeHandler, this);
+              this.on(
+                "changeItems",
+                function(items) {
+                  this._items = items;
+                  this._render();
+                },
+                this
+              );
+            },
+            _removeEvents: function() {
+              this.off();
+              off(this._container, "click", this._onClickHandler, this);
+              off(this._inputElement, "keydown", this._onKeydownInputElement, this);
+              off(this._inputElement, "change", this._onChangeHandler, this);
+            },
+            _onClickHandler: function(ev) {
+              var target = util.getTarget(ev);
+              if (closest(target, SELECTOR_DOWN_BUTTON)) {
+                this._setNextValue(true);
+              } else if (closest(target, SELECTOR_UP_BUTTON)) {
+                this._setNextValue(false);
+              }
+            },
+            _setNextValue: function(isDown) {
+              var index = this._selectedIndex;
+              if (isDown) {
+                index = index ? index - 1 : this._items.length - 1;
+              } else {
+                index = index < this._items.length - 1 ? index + 1 : 0;
+              }
+              if (this._disabledItems[index]) {
+                this._selectedIndex = index;
+                this._setNextValue(isDown);
+              } else {
+                this.setValue(this._items[index]);
+              }
+            },
+            _onKeydownInputElement: function(ev) {
+              var keyCode = ev.which || ev.keyCode;
+              var isDown;
+              if (closest(util.getTarget(ev), "input")) {
+                switch (keyCode) {
+                  case 38:
+                    isDown = false;
+                    break;
+                  case 40:
+                    isDown = true;
+                    break;
+                  default:
+                    return;
+                }
+                this._setNextValue(isDown);
+              }
+            },
+            _onChangeHandler: function(ev) {
+              if (closest(util.getTarget(ev), "input")) {
+                this._changeToInputValue();
+              }
+            },
+            _changeToInputValue: function(silent) {
+              var newValue = Number(this._inputElement.value);
+              var newIndex = inArray(newValue, this._items);
+              if (this._disabledItems[newIndex]) {
+                newIndex = this._findEnabledIndex();
+                newValue = this._items[newIndex];
+              } else if (newIndex === this._selectedIndex) {
+                return;
+              }
+              if (newIndex === -1) {
+                this.setValue(this._items[this._selectedIndex], silent);
+              } else {
+                this._selectedIndex = newIndex;
+                if (!silent) {
+                  this.fire("change", {
+                    value: newValue
+                  });
+                }
+              }
+            },
+            setValue: function(value, silent) {
+              this._inputElement.value = util.formatTime(value, this._format);
+              this._changeToInputValue(silent);
+            },
+            getValue: function() {
+              return this._items[this._selectedIndex];
+            },
+            destroy: function() {
+              this._removeEvents();
+              removeElement(this._element);
+              this._container = this._element = this._inputElement = this._items = this._selectedIndex = null;
             }
-          },
-          setValue: function(value) {
-            this._inputElement.value = util.formatTime(value, this._format);
-            this._changeToInputValue();
-          },
-          getValue: function() {
-            return this._items[this._selectedIndex];
-          },
-          destroy: function() {
-            this._removeEvents();
-            removeElement(this._element);
-            this._container = this._element = this._inputElement = this._items = this._selectedIndex = null;
           }
-        });
+        );
         CustomEvents2.mixin(Spinbox);
         module2.exports = Spinbox;
       },
@@ -1665,92 +1695,103 @@ var tuiTimePicker = { exports: {} };
         var isHTMLNode = __webpack_require__(14);
         var util = __webpack_require__(15);
         var tmpl = __webpack_require__(39);
-        var Selectbox = defineClass({
-          init: function(container, options) {
-            options = extend2({
-              items: []
-            }, options);
-            this._container = isHTMLNode(container) ? container : document.querySelector(container);
-            this._items = options.items || [];
-            this._disabledItems = options.disabledItems || [];
-            this._selectedIndex = Math.max(0, inArray(options.initialValue, this._items));
-            this._format = options.format;
-            this._element = null;
-            this._render();
-            this._setEvents();
-          },
-          _render: function() {
-            var context;
-            this._changeEnabledIndex();
-            context = {
-              items: this._items,
-              format: this._format,
-              initialValue: this.getValue(),
-              disabledItems: this._disabledItems,
-              formatTime: util.formatTime,
-              equals: function(a2, b2) {
-                return a2 === b2;
-              }
-            };
-            if (this._element) {
-              this._removeElement();
-            }
-            this._container.innerHTML = tmpl(context);
-            this._element = this._container.firstChild;
-            on2(this._element, "change", this._onChangeHandler, this);
-          },
-          _changeEnabledIndex: function() {
-            var index = inArray(this.getValue(), this._items);
-            if (this._disabledItems[index]) {
-              this._selectedIndex = inArray(false, this._disabledItems);
-            }
-          },
-          setDisabledItems: function(disabledItems) {
-            this._disabledItems = disabledItems;
-            this._render();
-          },
-          _setEvents: function() {
-            this.on("changeItems", function(items) {
-              this._items = items;
+        var Selectbox = defineClass(
+          {
+            init: function(container, options) {
+              options = extend2(
+                {
+                  items: []
+                },
+                options
+              );
+              this._container = isHTMLNode(container) ? container : document.querySelector(container);
+              this._items = options.items || [];
+              this._disabledItems = options.disabledItems || [];
+              this._selectedIndex = Math.max(0, inArray(options.initialValue, this._items));
+              this._format = options.format;
+              this._element = null;
               this._render();
-            }, this);
-          },
-          _removeEvents: function() {
-            this.off();
-          },
-          _removeElement: function() {
-            off(this._element, "change", this._onChangeHandler, this);
-            removeElement(this._element);
-          },
-          _onChangeHandler: function(ev) {
-            if (closest(util.getTarget(ev), "select")) {
-              this._setNewValue();
+              this._setEvents();
+            },
+            _render: function() {
+              var context;
+              this._changeEnabledIndex();
+              context = {
+                items: this._items,
+                format: this._format,
+                initialValue: this.getValue(),
+                disabledItems: this._disabledItems,
+                formatTime: util.formatTime,
+                equals: function(a2, b2) {
+                  return a2 === b2;
+                }
+              };
+              if (this._element) {
+                this._removeElement();
+              }
+              this._container.innerHTML = tmpl(context);
+              this._element = this._container.firstChild;
+              on2(this._element, "change", this._onChangeHandler, this);
+            },
+            _changeEnabledIndex: function() {
+              var index = inArray(this.getValue(), this._items);
+              if (this._disabledItems[index]) {
+                this._selectedIndex = inArray(false, this._disabledItems);
+              }
+            },
+            setDisabledItems: function(disabledItems) {
+              this._disabledItems = disabledItems;
+              this._render();
+            },
+            _setEvents: function() {
+              this.on(
+                "changeItems",
+                function(items) {
+                  this._items = items;
+                  this._render();
+                },
+                this
+              );
+            },
+            _removeEvents: function() {
+              this.off();
+            },
+            _removeElement: function() {
+              off(this._element, "change", this._onChangeHandler, this);
+              removeElement(this._element);
+            },
+            _onChangeHandler: function(ev) {
+              if (closest(util.getTarget(ev), "select")) {
+                this._setNewValue();
+              }
+            },
+            _setNewValue: function(silent) {
+              var newValue = Number(this._element.value);
+              this._selectedIndex = inArray(newValue, this._items);
+              if (!silent) {
+                this.fire("change", {
+                  value: newValue
+                });
+              }
+            },
+            getValue: function() {
+              return this._items[this._selectedIndex];
+            },
+            setValue: function(value, silent) {
+              var newIndex = inArray(value, this._items);
+              if (newIndex > -1 && newIndex !== this._selectedIndex) {
+                this._selectedIndex = newIndex;
+                this._element.value = value;
+                this._setNewValue(silent);
+              }
+            },
+            destroy: function() {
+              this._removeEvents();
+              this._removeElement();
+              this._container = this._items = this._selectedIndex = this._element = null;
             }
-          },
-          _setNewValue: function() {
-            var newValue = Number(this._element.value);
-            this._selectedIndex = inArray(newValue, this._items);
-            this.fire("change", {
-              value: newValue
-            });
-          },
-          getValue: function() {
-            return this._items[this._selectedIndex];
-          },
-          setValue: function(value) {
-            var newIndex = inArray(value, this._items);
-            if (newIndex > -1 && newIndex !== this._selectedIndex) {
-              this._selectedIndex = newIndex;
-              this._element.value = value;
-              this._setNewValue();
-            }
-          },
-          destroy: function() {
-            this._removeEvents();
-            this._removeElement();
-            this._container = this._items = this._selectedIndex = this._element = null;
           }
-        });
+        );
         CustomEvents2.mixin(Selectbox);
         module2.exports = Selectbox;
       },
@@ -1792,8 +1833,8 @@ var tuiTimePicker = { exports: {} };
 })(tuiTimePicker);
 /*!
  * TOAST UI Date Picker
- * @version 4.3.1
- * @author NHN. FE Development Lab <dl_javascript@nhn.com>
+ * @version 4.3.3
+ * @author NHN Cloud. FE Development Lab <dl_javascript@nhn.com>
  * @license MIT
  */
 (function(module, exports) {
@@ -2588,7 +2629,11 @@ var tuiTimePicker = { exports: {} };
           if (helperCount) {
             throw Error(helperKeyword + " needs {{/" + helperKeyword + "}} expression.");
           }
-          sourcesToEnd[startBlockIndex] = executeBlockHelper(sourcesToEnd[startBlockIndex].split(" ").slice(1), extractSourcesInsideBlock(sourcesToEnd, startBlockIndex, endBlockIndex), context);
+          sourcesToEnd[startBlockIndex] = executeBlockHelper(
+            sourcesToEnd[startBlockIndex].split(" ").slice(1),
+            extractSourcesInsideBlock(sourcesToEnd, startBlockIndex, endBlockIndex),
+            context
+          );
           return sourcesToEnd;
         }
         function handleExpression(exps, context) {
@@ -2727,7 +2772,9 @@ var tuiTimePicker = { exports: {} };
         var off = __webpack_require__(33);
         var mouseTouchEvent = {
           _isMobile: function() {
-            return /Android|BlackBerry|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(navigator.userAgent);
+            return /Android|BlackBerry|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(
+              navigator.userAgent
+            );
           }(),
           _getEventType: function(type) {
             if (this._isMobile) {
@@ -2753,35 +2800,37 @@ var tuiTimePicker = { exports: {} };
         var removeElement = __webpack_require__(14);
         var localeText = __webpack_require__(10);
         var DEFAULT_LANGUAGE_TYPE = __webpack_require__(1).DEFAULT_LANGUAGE_TYPE;
-        var LayerBase = defineClass({
-          init: function(language) {
-            language = language || DEFAULT_LANGUAGE_TYPE;
-            this._element = null;
-            this._localeText = localeText[language];
-            this._type = "base";
-          },
-          _makeContext: function() {
-            throwOverrideError(this.getType(), "_makeContext");
-          },
-          render: function() {
-            throwOverrideError(this.getType(), "render");
-          },
-          getDateElements: function() {
-            throwOverrideError(this.getType(), "getDateElements");
-          },
-          getType: function() {
-            return this._type;
-          },
-          changeLanguage: function(language) {
-            this._localeText = localeText[language];
-          },
-          remove: function() {
-            if (this._element) {
-              removeElement(this._element);
+        var LayerBase = defineClass(
+          {
+            init: function(language) {
+              language = language || DEFAULT_LANGUAGE_TYPE;
+              this._element = null;
+              this._localeText = localeText[language];
+              this._type = "base";
+            },
+            _makeContext: function() {
+              throwOverrideError(this.getType(), "_makeContext");
+            },
+            render: function() {
+              throwOverrideError(this.getType(), "render");
+            },
+            getDateElements: function() {
+              throwOverrideError(this.getType(), "getDateElements");
+            },
+            getType: function() {
+              return this._type;
+            },
+            changeLanguage: function(language) {
+              this._localeText = localeText[language];
+            },
+            remove: function() {
+              if (this._element) {
+                removeElement(this._element);
+              }
+              this._element = null;
             }
-            this._element = null;
           }
-        });
+        );
         function throwOverrideError(layerType, methodName) {
           throw new Error(layerType + ' layer does not have the "' + methodName + '" method.');
         }
@@ -2836,23 +2885,26 @@ var tuiTimePicker = { exports: {} };
         var SELECTOR_CALENDAR_CONTAINER = ".tui-calendar-container";
         var SELECTOR_TIMEPICKER_CONTAINER = ".tui-timepicker-container";
         var mergeDefaultOption = function(option) {
-          option = extend2({
-            language: DEFAULT_LANGUAGE_TYPE,
-            calendar: {},
-            input: {
-              element: null,
-              format: null
+          option = extend2(
+            {
+              language: DEFAULT_LANGUAGE_TYPE,
+              calendar: {},
+              input: {
+                element: null,
+                format: null
+              },
+              timePicker: null,
+              date: null,
+              showAlways: false,
+              type: TYPE_DATE,
+              selectableRanges: null,
+              openers: [],
+              autoClose: true,
+              usageStatistics: true,
+              weekStartDay: DEFAULT_WEEK_START_DAY
             },
-            timePicker: null,
-            date: null,
-            showAlways: false,
-            type: TYPE_DATE,
-            selectableRanges: null,
-            openers: [],
-            autoClose: true,
-            usageStatistics: true,
-            weekStartDay: DEFAULT_WEEK_START_DAY
-          }, option);
+            option
+          );
           option.selectableRanges = option.selectableRanges || [[constants.MIN_DATE, constants.MAX_DATE]];
           if (!isObject2(option.calendar)) {
             throw new Error("Calendar option must be an object");
@@ -2869,585 +2921,625 @@ var tuiTimePicker = { exports: {} };
           option.timePicker = option.timePicker || option.timepicker;
           return option;
         };
-        var DatePicker2 = defineClass({
-          static: {
-            localeTexts
-          },
-          init: function(container, options) {
-            options = mergeDefaultOption(options);
-            this._language = options.language;
-            this._container = util.getElement(container);
-            this._container.innerHTML = tmpl(extend2(options, {
-              isTab: options.timePicker && options.timePicker.layoutType === "tab"
-            }));
-            this._element = this._container.firstChild;
-            this._calendar = new Calendar2(this._element.querySelector(SELECTOR_CALENDAR_CONTAINER), extend2(options.calendar, {
-              usageStatistics: options.usageStatistics,
-              weekStartDay: options.weekStartDay
-            }));
-            this._timePicker = null;
-            this._datepickerInput = null;
-            this._date = null;
-            this._rangeModel = null;
-            this._openers = [];
-            this._isEnabled = true;
-            this._id = "tui-datepicker-" + util.generateId();
-            this._type = options.type;
-            this.showAlways = options.showAlways;
-            this.autoClose = options.autoClose;
-            this._initializeDatePicker(options);
-          },
-          _initializeDatePicker: function(option) {
-            this.setRanges(option.selectableRanges);
-            this._setEvents();
-            this._initTimePicker(option.timePicker, option.usageStatistics);
-            this.setInput(option.input.element);
-            this.setDateFormat(option.input.format);
-            this.setDate(option.date);
-            forEachArray2(option.openers, this.addOpener, this);
-            if (!this.showAlways) {
-              this._hide();
-            }
-            if (this.getType() === TYPE_DATE) {
-              addClass(this._element.querySelector(SELECTOR_BODY), "tui-datepicker-type-date");
-            }
-          },
-          _setEvents: function() {
-            mouseTouchEvent.on(this._element, "click", this._onClickHandler, this);
-            this._calendar.on("draw", this._onDrawCalendar, this);
-          },
-          _removeEvents: function() {
-            mouseTouchEvent.off(this._element, "click", this._onClickHandler, this);
-            this._calendar.off();
-          },
-          _setDocumentEvents: function() {
-            mouseTouchEvent.on(document, "mousedown", this._onMousedownDocument, this);
-          },
-          _removeDocumentEvents: function() {
-            mouseTouchEvent.off(document, "mousedown", this._onMousedownDocument);
-          },
-          _setOpenerEvents: function(opener) {
-            mouseTouchEvent.on(opener, "click", this.toggle, this);
-          },
-          _removeOpenerEvents: function(opener) {
-            mouseTouchEvent.off(opener, "click", this.toggle);
-          },
-          _initTimePicker: function(opTimePicker, usageStatistics) {
-            var layoutType;
-            if (!opTimePicker) {
-              return;
-            }
-            layoutType = opTimePicker.layoutType || "";
-            if (isObject2(opTimePicker)) {
-              opTimePicker.usageStatistics = usageStatistics;
-            } else {
-              opTimePicker = {
-                usageStatistics
-              };
-            }
-            this._timePicker = new TimePicker(this._element.querySelector(SELECTOR_TIMEPICKER_CONTAINER), opTimePicker);
-            if (layoutType.toLowerCase() === "tab") {
-              this._timePicker.hide();
-            }
-            this._timePicker.on("change", function(ev) {
-              var prevDate;
-              if (this._date) {
-                prevDate = new Date(this._date);
-                this.setDate(prevDate.setHours(ev.hour, ev.minute));
+        var DatePicker2 = defineClass(
+          {
+            static: {
+              localeTexts
+            },
+            init: function(container, options) {
+              options = mergeDefaultOption(options);
+              this._language = options.language;
+              this._container = util.getElement(container);
+              this._container.innerHTML = tmpl(
+                extend2(options, {
+                  isTab: options.timePicker && options.timePicker.layoutType === "tab"
+                })
+              );
+              this._element = this._container.firstChild;
+              this._calendar = new Calendar2(
+                this._element.querySelector(SELECTOR_CALENDAR_CONTAINER),
+                extend2(options.calendar, {
+                  usageStatistics: options.usageStatistics,
+                  weekStartDay: options.weekStartDay
+                })
+              );
+              this._timePicker = null;
+              this._datepickerInput = null;
+              this._date = null;
+              this._rangeModel = null;
+              this._openers = [];
+              this._isEnabled = true;
+              this._id = "tui-datepicker-" + util.generateId();
+              this._type = options.type;
+              this.showAlways = options.showAlways;
+              this.autoClose = options.autoClose;
+              this._initializeDatePicker(options);
+            },
+            _initializeDatePicker: function(option) {
+              this.setRanges(option.selectableRanges);
+              this._setEvents();
+              this._initTimePicker(option.timePicker, option.usageStatistics);
+              this.setInput(option.input.element);
+              this.setDateFormat(option.input.format);
+              this.setDate(option.date);
+              forEachArray2(option.openers, this.addOpener, this);
+              if (!this.showAlways) {
+                this._hide();
               }
-            }, this);
-          },
-          _changePicker: function(target) {
-            var btnSelector = "." + CLASS_NAME_SELECTOR_BUTTON;
-            var selectedBtn = closest(target, btnSelector);
-            var isDateElement = !!selectedBtn.querySelector(SELECTOR_DATE_ICO);
-            if (isDateElement) {
-              this._calendar.show();
-              this._timePicker.hide();
-            } else {
-              this._calendar.hide();
-              this._timePicker.show();
-            }
-            removeClass(this._element.querySelector("." + CLASS_NAME_CHECKED), CLASS_NAME_CHECKED);
-            addClass(selectedBtn, CLASS_NAME_CHECKED);
-          },
-          _isOpener: function(element) {
-            var el = util.getElement(element);
-            return inArray(el, this._openers) > -1;
-          },
-          _setTodayClassName: function(el) {
-            var timestamp, isToday;
-            if (this.getCalendarType() !== TYPE_DATE) {
-              return;
-            }
-            timestamp = Number(getData(el, "timestamp"));
-            isToday = timestamp === new Date().setHours(0, 0, 0, 0);
-            if (isToday) {
-              addClass(el, CLASS_NAME_TODAY);
-            } else {
-              removeClass(el, CLASS_NAME_TODAY);
-            }
-          },
-          _setSelectableClassName: function(el) {
-            var elDate = new Date(Number(getData(el, "timestamp")));
-            if (this._isSelectableOnCalendar(elDate)) {
-              addClass(el, CLASS_NAME_SELECTABLE);
-              removeClass(el, CLASS_NAME_BLOCKED);
-            } else {
-              removeClass(el, CLASS_NAME_SELECTABLE);
-              addClass(el, CLASS_NAME_BLOCKED);
-            }
-          },
-          _setSelectedClassName: function(el) {
-            var elDate = new Date(Number(getData(el, "timestamp")));
-            if (this._isSelectedOnCalendar(elDate)) {
-              addClass(el, CLASS_NAME_SELECTED);
-            } else {
-              removeClass(el, CLASS_NAME_SELECTED);
-            }
-          },
-          _isSelectableOnCalendar: function(date2) {
-            var type = this.getCalendarType();
-            var start = dateUtil.cloneWithStartOf(date2, type).getTime();
-            var end = dateUtil.cloneWithEndOf(date2, type).getTime();
-            return this._rangeModel.hasOverlap(start, end);
-          },
-          _isSelectedOnCalendar: function(date2) {
-            var curDate = this.getDate();
-            var calendarType = this.getCalendarType();
-            return curDate && dateUtil.isSame(curDate, date2, calendarType);
-          },
-          _show: function() {
-            removeClass(this._element, CLASS_NAME_HIDDEN);
-          },
-          _hide: function() {
-            addClass(this._element, CLASS_NAME_HIDDEN);
-          },
-          _syncToInput: function() {
-            if (!this._date) {
-              return;
-            }
-            this._datepickerInput.setDate(this._date);
-          },
-          _syncFromInput: function(shouldRollback) {
-            var isFailed = false;
-            var date2;
-            try {
-              date2 = this._datepickerInput.getDate();
-              if (this.isSelectable(date2)) {
-                if (this._timePicker) {
-                  this._timePicker.setTime(date2.getHours(), date2.getMinutes());
-                }
-                this.setDate(date2);
+              if (this.getType() === TYPE_DATE) {
+                addClass(this._element.querySelector(SELECTOR_BODY), "tui-datepicker-type-date");
+              }
+            },
+            _setEvents: function() {
+              mouseTouchEvent.on(this._element, "click", this._onClickHandler, this);
+              this._calendar.on("draw", this._onDrawCalendar, this);
+            },
+            _removeEvents: function() {
+              mouseTouchEvent.off(this._element, "click", this._onClickHandler, this);
+              this._calendar.off();
+            },
+            _setDocumentEvents: function() {
+              mouseTouchEvent.on(document, "mousedown", this._onMousedownDocument, this);
+            },
+            _removeDocumentEvents: function() {
+              mouseTouchEvent.off(document, "mousedown", this._onMousedownDocument);
+            },
+            _setOpenerEvents: function(opener) {
+              mouseTouchEvent.on(opener, "click", this.toggle, this);
+            },
+            _removeOpenerEvents: function(opener) {
+              mouseTouchEvent.off(opener, "click", this.toggle);
+            },
+            _initTimePicker: function(opTimePicker, usageStatistics) {
+              var layoutType;
+              if (!opTimePicker) {
+                return;
+              }
+              layoutType = opTimePicker.layoutType || "";
+              if (isObject2(opTimePicker)) {
+                opTimePicker.usageStatistics = usageStatistics;
               } else {
-                isFailed = true;
+                opTimePicker = {
+                  usageStatistics
+                };
               }
-            } catch (err) {
-              this.fire("error", {
-                type: "ParsingError",
-                message: err.message
-              });
-              isFailed = true;
-            } finally {
-              if (isFailed) {
-                if (shouldRollback) {
-                  this._syncToInput();
+              this._timePicker = new TimePicker(
+                this._element.querySelector(SELECTOR_TIMEPICKER_CONTAINER),
+                opTimePicker
+              );
+              if (layoutType.toLowerCase() === "tab") {
+                this._timePicker.hide();
+              }
+              this._timePicker.on(
+                "change",
+                function(ev) {
+                  var prevDate;
+                  if (this._date) {
+                    prevDate = new Date(this._date);
+                    this.setDate(prevDate.setHours(ev.hour, ev.minute));
+                  }
+                },
+                this
+              );
+            },
+            _changePicker: function(target) {
+              var btnSelector = "." + CLASS_NAME_SELECTOR_BUTTON;
+              var selectedBtn = closest(target, btnSelector);
+              var isDateElement = !!selectedBtn.querySelector(SELECTOR_DATE_ICO);
+              if (isDateElement) {
+                this._calendar.show();
+                this._timePicker.hide();
+              } else {
+                this._calendar.hide();
+                this._timePicker.show();
+              }
+              removeClass(this._element.querySelector("." + CLASS_NAME_CHECKED), CLASS_NAME_CHECKED);
+              addClass(selectedBtn, CLASS_NAME_CHECKED);
+            },
+            _isOpener: function(element) {
+              var el = util.getElement(element);
+              return inArray(el, this._openers) > -1;
+            },
+            _setTodayClassName: function(el) {
+              var timestamp, isToday;
+              if (this.getCalendarType() !== TYPE_DATE) {
+                return;
+              }
+              timestamp = Number(getData(el, "timestamp"));
+              isToday = timestamp === new Date().setHours(0, 0, 0, 0);
+              if (isToday) {
+                addClass(el, CLASS_NAME_TODAY);
+              } else {
+                removeClass(el, CLASS_NAME_TODAY);
+              }
+            },
+            _setSelectableClassName: function(el) {
+              var elDate = new Date(Number(getData(el, "timestamp")));
+              if (this._isSelectableOnCalendar(elDate)) {
+                addClass(el, CLASS_NAME_SELECTABLE);
+                removeClass(el, CLASS_NAME_BLOCKED);
+              } else {
+                removeClass(el, CLASS_NAME_SELECTABLE);
+                addClass(el, CLASS_NAME_BLOCKED);
+              }
+            },
+            _setSelectedClassName: function(el) {
+              var elDate = new Date(Number(getData(el, "timestamp")));
+              if (this._isSelectedOnCalendar(elDate)) {
+                addClass(el, CLASS_NAME_SELECTED);
+              } else {
+                removeClass(el, CLASS_NAME_SELECTED);
+              }
+            },
+            _isSelectableOnCalendar: function(date2) {
+              var type = this.getCalendarType();
+              var start = dateUtil.cloneWithStartOf(date2, type).getTime();
+              var end = dateUtil.cloneWithEndOf(date2, type).getTime();
+              return this._rangeModel.hasOverlap(start, end);
+            },
+            _isSelectedOnCalendar: function(date2) {
+              var curDate = this.getDate();
+              var calendarType = this.getCalendarType();
+              return curDate && dateUtil.isSame(curDate, date2, calendarType);
+            },
+            _show: function() {
+              removeClass(this._element, CLASS_NAME_HIDDEN);
+            },
+            _hide: function() {
+              addClass(this._element, CLASS_NAME_HIDDEN);
+            },
+            _syncToInput: function() {
+              if (!this._date) {
+                return;
+              }
+              this._datepickerInput.setDate(this._date);
+            },
+            _syncFromInput: function(shouldRollback) {
+              var isFailed = false;
+              var date2;
+              try {
+                date2 = this._datepickerInput.getDate();
+                if (this.isSelectable(date2)) {
+                  if (this._timePicker) {
+                    this._timePicker.setTime(date2.getHours(), date2.getMinutes());
+                  }
+                  this.setDate(date2);
                 } else {
-                  this.setNull();
+                  isFailed = true;
+                }
+              } catch (err) {
+                this.fire("error", {
+                  type: "ParsingError",
+                  message: err.message
+                });
+                isFailed = true;
+              } finally {
+                if (isFailed) {
+                  if (shouldRollback) {
+                    this._syncToInput();
+                  } else {
+                    this.setNull();
+                  }
                 }
               }
-            }
-          },
-          _onMousedownDocument: function(ev) {
-            var target = util.getTarget(ev);
-            var selector = util.getSelector(target);
-            var isContain = selector ? this._element.querySelector(selector) : false;
-            var isInput = this._datepickerInput.is(target);
-            var isInOpener = inArray(target, this._openers) > -1;
-            var shouldClose = !(this.showAlways || isInput || isContain || isInOpener);
-            if (shouldClose) {
-              this.close();
-            }
-          },
-          _onClickHandler: function(ev) {
-            var target = util.getTarget(ev);
-            if (closest(target, "." + CLASS_NAME_SELECTABLE)) {
-              ev.preventDefault();
-              this._updateDate(target);
-            } else if (closest(target, "." + CLASS_NAME_TITLE_TODAY)) {
-              ev.preventDefault();
-              this._updateDateToToday();
-            } else if (closest(target, SELECTOR_CALENDAR_TITLE)) {
-              this.drawUpperCalendar(this._date);
-            } else if (closest(target, "." + CLASS_NAME_SELECTOR_BUTTON)) {
-              this._changePicker(target);
-            }
-          },
-          _updateDateToToday: function() {
-            this.setDate(Date.now());
-            this.close();
-          },
-          _updateDate: function(target) {
-            var timestamp = Number(getData(target, "timestamp"));
-            var newDate = new Date(timestamp);
-            var timePicker = this._timePicker;
-            var prevDate = this._date;
-            var calendarType = this.getCalendarType();
-            var pickerType = this.getType();
-            if (calendarType !== pickerType) {
-              this.drawLowerCalendar(newDate);
-            } else {
-              if (timePicker) {
-                newDate.setHours(timePicker.getHour(), timePicker.getMinute());
-              } else if (prevDate) {
-                newDate.setHours(prevDate.getHours(), prevDate.getMinutes());
-              }
-              this.setDate(newDate);
-              if (!this.showAlways && this.autoClose) {
+            },
+            _onMousedownDocument: function(ev) {
+              var target = util.getTarget(ev);
+              var selector = util.getSelector(target);
+              var isContain = selector ? this._element.querySelector(selector) : false;
+              var isInput = this._datepickerInput.is(target);
+              var isInOpener = inArray(target, this._openers) > -1;
+              var shouldClose = !(this.showAlways || isInput || isContain || isInOpener);
+              if (shouldClose) {
                 this.close();
               }
-            }
-          },
-          _onDrawCalendar: function(eventData) {
-            forEachArray2(eventData.dateElements, function(el) {
-              this._setTodayClassName(el);
-              this._setSelectableClassName(el);
-              this._setSelectedClassName(el);
-            }, this);
-            this._setDisplayHeadButtons();
-            this.fire("draw", eventData);
-          },
-          _setDisplayHeadButtons: function() {
-            var nextYearDate = this._calendar.getNextYearDate();
-            var prevYearDate = this._calendar.getPrevYearDate();
-            var maxTimestamp = this._rangeModel.getMaximumValue();
-            var minTimestamp = this._rangeModel.getMinimumValue();
-            var nextYearBtn = this._element.querySelector("." + CLASS_NAME_NEXT_YEAR_BTN);
-            var prevYearBtn = this._element.querySelector("." + CLASS_NAME_PREV_YEAR_BTN);
-            var nextMonthDate, prevMonthDate, nextMonBtn, prevMonBtn;
-            if (this.getCalendarType() === TYPE_DATE) {
-              nextMonthDate = dateUtil.cloneWithStartOf(this._calendar.getNextDate(), TYPE_MONTH);
-              prevMonthDate = dateUtil.cloneWithEndOf(this._calendar.getPrevDate(), TYPE_MONTH);
-              nextMonBtn = this._element.querySelector("." + CLASS_NAME_NEXT_MONTH_BTN);
-              prevMonBtn = this._element.querySelector("." + CLASS_NAME_PREV_MONTH_BTN);
-              this._setDisplay(nextMonBtn, nextMonthDate.getTime() <= maxTimestamp);
-              this._setDisplay(prevMonBtn, prevMonthDate.getTime() >= minTimestamp);
-              prevYearDate.setDate(1);
-              nextYearDate.setDate(1);
-            } else {
-              prevYearDate.setMonth(12, 0);
-              nextYearDate.setMonth(0, 1);
-            }
-            this._setDisplay(nextYearBtn, nextYearDate.getTime() <= maxTimestamp);
-            this._setDisplay(prevYearBtn, prevYearDate.getTime() >= minTimestamp);
-          },
-          _setDisplay: function(el, shouldShow) {
-            if (el) {
-              if (shouldShow) {
-                removeClass(el, CLASS_NAME_HIDDEN);
-              } else {
-                addClass(el, CLASS_NAME_HIDDEN);
+            },
+            _onClickHandler: function(ev) {
+              var target = util.getTarget(ev);
+              if (closest(target, "." + CLASS_NAME_SELECTABLE)) {
+                ev.preventDefault();
+                this._updateDate(target);
+              } else if (closest(target, "." + CLASS_NAME_TITLE_TODAY)) {
+                ev.preventDefault();
+                this._updateDateToToday();
+              } else if (closest(target, SELECTOR_CALENDAR_TITLE)) {
+                this.drawUpperCalendar(this._date);
+              } else if (closest(target, "." + CLASS_NAME_SELECTOR_BUTTON)) {
+                this._changePicker(target);
               }
-            }
-          },
-          _onChangeInput: function() {
-            this._syncFromInput(true);
-          },
-          _isChanged: function(date2) {
-            var prevDate = this.getDate();
-            return !prevDate || date2.getTime() !== prevDate.getTime();
-          },
-          _refreshFromRanges: function() {
-            if (!this.isSelectable(this._date)) {
-              this.setNull();
-            } else {
-              this._calendar.draw();
-            }
-          },
-          getCalendarType: function() {
-            return this._calendar.getType();
-          },
-          getType: function() {
-            return this._type;
-          },
-          isSelectable: function(date2) {
-            var type = this.getType();
-            var start, end;
-            if (!dateUtil.isValidDate(date2)) {
-              return false;
-            }
-            start = dateUtil.cloneWithStartOf(date2, type).getTime();
-            end = dateUtil.cloneWithEndOf(date2, type).getTime();
-            return this._rangeModel.hasOverlap(start, end);
-          },
-          isSelected: function(date2) {
-            return dateUtil.isValidDate(date2) && dateUtil.isSame(this._date, date2, this.getType());
-          },
-          setRanges: function(ranges) {
-            var result = [];
-            forEachArray2(ranges, function(range2) {
-              var start = new Date(range2[0]).getTime();
-              var end = new Date(range2[1]).getTime();
-              result.push([start, end]);
-            });
-            this._rangeModel = new RangeModel(result);
-            this._refreshFromRanges();
-          },
-          setType: function(type) {
-            this._type = type;
-          },
-          addRange: function(start, end) {
-            start = new Date(start).getTime();
-            end = new Date(end).getTime();
-            this._rangeModel.add(start, end);
-            this._refreshFromRanges();
-          },
-          removeRange: function(start, end, type) {
-            start = new Date(start);
-            end = new Date(end);
-            if (type) {
-              start = dateUtil.cloneWithStartOf(start, type);
-              end = dateUtil.cloneWithEndOf(end, type);
-            }
-            this._rangeModel.exclude(start.getTime(), end.getTime());
-            this._refreshFromRanges();
-          },
-          addOpener: function(opener) {
-            opener = util.getElement(opener);
-            if (!this._isOpener(opener)) {
-              this._openers.push(opener);
-              this._setOpenerEvents(opener);
-            }
-          },
-          removeOpener: function(opener) {
-            var index;
-            opener = util.getElement(opener);
-            index = inArray(opener, this._openers);
-            if (index > -1) {
-              this._removeOpenerEvents(opener);
-              this._openers.splice(index, 1);
-            }
-          },
-          removeAllOpeners: function() {
-            forEachArray2(this._openers, function(opener) {
-              this._removeOpenerEvents(opener);
-            }, this);
-            this._openers = [];
-          },
-          open: function() {
-            if (this.isOpened() || !this._isEnabled) {
-              return;
-            }
-            this._calendar.draw({
-              date: this._date,
-              type: this._type
-            });
-            this._show();
-            if (!this.showAlways) {
-              this._setDocumentEvents();
-            }
-            this.fire("open");
-          },
-          drawUpperCalendar: function(date2) {
-            var calendarType = this.getCalendarType();
-            if (calendarType === TYPE_DATE) {
-              this._calendar.draw({
-                date: date2,
-                type: TYPE_MONTH
-              });
-            } else if (calendarType === TYPE_MONTH) {
-              this._calendar.draw({
-                date: date2,
-                type: TYPE_YEAR
-              });
-            }
-          },
-          drawLowerCalendar: function(date2) {
-            var calendarType = this.getCalendarType();
-            var pickerType = this.getType();
-            var isLast = calendarType === pickerType;
-            if (isLast) {
-              return;
-            }
-            if (calendarType === TYPE_MONTH) {
-              this._calendar.draw({
-                date: date2,
-                type: TYPE_DATE
-              });
-            } else if (calendarType === TYPE_YEAR) {
-              this._calendar.draw({
-                date: date2,
-                type: TYPE_MONTH
-              });
-            }
-          },
-          close: function() {
-            if (!this.isOpened()) {
-              return;
-            }
-            this._removeDocumentEvents();
-            this._hide();
-            this.fire("close");
-          },
-          toggle: function() {
-            if (this.isOpened()) {
+            },
+            _updateDateToToday: function() {
+              this.setDate(Date.now());
               this.close();
-            } else {
-              this.open();
-            }
-          },
-          getDate: function() {
-            if (!this._date) {
-              return null;
-            }
-            return new Date(this._date);
-          },
-          setDate: function(date2) {
-            var isValidInput, newDate, shouldUpdate;
-            if (date2 === null) {
-              this.setNull();
-              return;
-            }
-            isValidInput = isNumber2(date2) || isDate(date2);
-            newDate = new Date(date2);
-            shouldUpdate = isValidInput && this._isChanged(newDate) && this.isSelectable(newDate);
-            if (shouldUpdate) {
-              newDate = new Date(date2);
-              this._date = newDate;
-              this._calendar.draw({ date: newDate });
-              if (this._timePicker) {
-                this._timePicker.setTime(newDate.getHours(), newDate.getMinutes());
+            },
+            _updateDate: function(target) {
+              var timestamp = Number(getData(target, "timestamp"));
+              var newDate = new Date(timestamp);
+              var timePicker = this._timePicker;
+              var prevDate = this._date;
+              var calendarType = this.getCalendarType();
+              var pickerType = this.getType();
+              if (calendarType !== pickerType) {
+                this.drawLowerCalendar(newDate);
+              } else {
+                if (timePicker) {
+                  newDate.setHours(timePicker.getHour(), timePicker.getMinute());
+                } else if (prevDate) {
+                  newDate.setHours(prevDate.getHours(), prevDate.getMinutes());
+                }
+                this.setDate(newDate);
+                if (!this.showAlways && this.autoClose) {
+                  this.close();
+                }
               }
-              this._syncToInput();
-              this.fire("change");
-            }
-          },
-          setNull: function() {
-            var calendarDate = this._calendar.getDate();
-            var isChagned = this._date !== null;
-            this._date = null;
-            if (this._datepickerInput) {
-              this._datepickerInput.clearText();
-            }
-            if (this._timePicker) {
-              this._timePicker.setTime(0, 0);
-            }
-            if (!this.isSelectable(calendarDate)) {
-              this._calendar.draw({
-                date: new Date(this._rangeModel.getMinimumValue())
+            },
+            _onDrawCalendar: function(eventData) {
+              forEachArray2(
+                eventData.dateElements,
+                function(el) {
+                  this._setTodayClassName(el);
+                  this._setSelectableClassName(el);
+                  this._setSelectedClassName(el);
+                },
+                this
+              );
+              this._setDisplayHeadButtons();
+              this.fire("draw", eventData);
+            },
+            _setDisplayHeadButtons: function() {
+              var customStep = 60;
+              var nextYearDate = this._calendar.getNextYearDate(
+                this.getCalendarType() === TYPE_YEAR ? customStep : null
+              );
+              var prevYearDate = this._calendar.getPrevYearDate(
+                this.getCalendarType() === TYPE_YEAR ? -customStep : null
+              );
+              var maxTimestamp = this._rangeModel.getMaximumValue();
+              var minTimestamp = this._rangeModel.getMinimumValue();
+              var nextYearBtn = this._element.querySelector("." + CLASS_NAME_NEXT_YEAR_BTN);
+              var prevYearBtn = this._element.querySelector("." + CLASS_NAME_PREV_YEAR_BTN);
+              var nextMonthDate, prevMonthDate, nextMonBtn, prevMonBtn;
+              if (this.getCalendarType() === TYPE_DATE) {
+                nextMonthDate = dateUtil.cloneWithStartOf(this._calendar.getNextDate(), TYPE_MONTH);
+                prevMonthDate = dateUtil.cloneWithEndOf(this._calendar.getPrevDate(), TYPE_MONTH);
+                nextMonBtn = this._element.querySelector("." + CLASS_NAME_NEXT_MONTH_BTN);
+                prevMonBtn = this._element.querySelector("." + CLASS_NAME_PREV_MONTH_BTN);
+                this._setDisplay(nextMonBtn, nextMonthDate.getTime() <= maxTimestamp);
+                this._setDisplay(prevMonBtn, prevMonthDate.getTime() >= minTimestamp);
+                prevYearDate.setDate(1);
+                nextYearDate.setDate(1);
+              } else {
+                prevYearDate.setMonth(12, 0);
+                nextYearDate.setMonth(0, 1);
+              }
+              this._setDisplay(nextYearBtn, nextYearDate.getTime() <= maxTimestamp);
+              this._setDisplay(prevYearBtn, prevYearDate.getTime() >= minTimestamp);
+            },
+            _setDisplay: function(el, shouldShow) {
+              if (el) {
+                if (shouldShow) {
+                  removeClass(el, CLASS_NAME_HIDDEN);
+                } else {
+                  addClass(el, CLASS_NAME_HIDDEN);
+                }
+              }
+            },
+            _onChangeInput: function() {
+              this._syncFromInput(true);
+            },
+            _isChanged: function(date2) {
+              var prevDate = this.getDate();
+              return !prevDate || date2.getTime() !== prevDate.getTime();
+            },
+            _refreshFromRanges: function() {
+              if (!this.isSelectable(this._date)) {
+                this.setNull();
+              } else {
+                this._calendar.draw();
+              }
+            },
+            getCalendarType: function() {
+              return this._calendar.getType();
+            },
+            getType: function() {
+              return this._type;
+            },
+            isSelectable: function(date2) {
+              var type = this.getType();
+              var start, end;
+              if (!dateUtil.isValidDate(date2)) {
+                return false;
+              }
+              start = dateUtil.cloneWithStartOf(date2, type).getTime();
+              end = dateUtil.cloneWithEndOf(date2, type).getTime();
+              return this._rangeModel.hasOverlap(start, end);
+            },
+            isSelected: function(date2) {
+              return dateUtil.isValidDate(date2) && dateUtil.isSame(this._date, date2, this.getType());
+            },
+            setRanges: function(ranges) {
+              var result = [];
+              forEachArray2(ranges, function(range2) {
+                var start = new Date(range2[0]).getTime();
+                var end = new Date(range2[1]).getTime();
+                result.push([start, end]);
               });
-            } else {
-              this._calendar.draw();
-            }
-            if (isChagned) {
-              this.fire("change");
-            }
-          },
-          setDateFormat: function(format) {
-            this._datepickerInput.setFormat(format);
-            this._syncToInput();
-          },
-          isOpened: function() {
-            return !hasClass(this._element, CLASS_NAME_HIDDEN);
-          },
-          getTimePicker: function() {
-            return this._timePicker;
-          },
-          getCalendar: function() {
-            return this._calendar;
-          },
-          getLocaleText: function() {
-            return localeTexts[this._language] || localeTexts[DEFAULT_LANGUAGE_TYPE];
-          },
-          setInput: function(element, options) {
-            var prev = this._datepickerInput;
-            var localeText = this.getLocaleText();
-            var prevFormat;
-            options = options || {};
-            if (prev) {
-              prevFormat = prev.getFormat();
-              prev.destroy();
-            }
-            this._datepickerInput = new DatePickerInput(element, {
-              format: options.format || prevFormat,
-              id: this._id,
-              localeText
-            });
-            this._datepickerInput.on({
-              change: this._onChangeInput,
-              click: this.open
-            }, this);
-            if (options.syncFromInput) {
-              this._syncFromInput();
-            } else {
+              this._rangeModel = new RangeModel(result);
+              this._refreshFromRanges();
+            },
+            setType: function(type) {
+              this._type = type;
+            },
+            addRange: function(start, end) {
+              start = new Date(start).getTime();
+              end = new Date(end).getTime();
+              this._rangeModel.add(start, end);
+              this._refreshFromRanges();
+            },
+            removeRange: function(start, end, type) {
+              start = new Date(start);
+              end = new Date(end);
+              if (type) {
+                start = dateUtil.cloneWithStartOf(start, type);
+                end = dateUtil.cloneWithEndOf(end, type);
+              }
+              this._rangeModel.exclude(start.getTime(), end.getTime());
+              this._refreshFromRanges();
+            },
+            addOpener: function(opener) {
+              opener = util.getElement(opener);
+              if (!this._isOpener(opener)) {
+                this._openers.push(opener);
+                this._setOpenerEvents(opener);
+              }
+            },
+            removeOpener: function(opener) {
+              var index;
+              opener = util.getElement(opener);
+              index = inArray(opener, this._openers);
+              if (index > -1) {
+                this._removeOpenerEvents(opener);
+                this._openers.splice(index, 1);
+              }
+            },
+            removeAllOpeners: function() {
+              forEachArray2(
+                this._openers,
+                function(opener) {
+                  this._removeOpenerEvents(opener);
+                },
+                this
+              );
+              this._openers = [];
+            },
+            open: function() {
+              if (this.isOpened() || !this._isEnabled) {
+                return;
+              }
+              this._calendar.draw({
+                date: this._date,
+                type: this._type
+              });
+              this._show();
+              if (!this.showAlways) {
+                this._setDocumentEvents();
+              }
+              this.fire("open");
+            },
+            drawUpperCalendar: function(date2) {
+              var calendarType = this.getCalendarType();
+              if (calendarType === TYPE_DATE) {
+                this._calendar.draw({
+                  date: date2,
+                  type: TYPE_MONTH
+                });
+              } else if (calendarType === TYPE_MONTH) {
+                this._calendar.draw({
+                  date: date2,
+                  type: TYPE_YEAR
+                });
+              }
+            },
+            drawLowerCalendar: function(date2) {
+              var calendarType = this.getCalendarType();
+              var pickerType = this.getType();
+              var isLast = calendarType === pickerType;
+              if (isLast) {
+                return;
+              }
+              if (calendarType === TYPE_MONTH) {
+                this._calendar.draw({
+                  date: date2,
+                  type: TYPE_DATE
+                });
+              } else if (calendarType === TYPE_YEAR) {
+                this._calendar.draw({
+                  date: date2,
+                  type: TYPE_MONTH
+                });
+              }
+            },
+            close: function() {
+              if (!this.isOpened()) {
+                return;
+              }
+              this._removeDocumentEvents();
+              this._hide();
+              this.fire("close");
+            },
+            toggle: function() {
+              if (this.isOpened()) {
+                this.close();
+              } else {
+                this.open();
+              }
+            },
+            getDate: function() {
+              if (!this._date) {
+                return null;
+              }
+              return new Date(this._date);
+            },
+            setDate: function(date2, silent) {
+              var isValidInput, newDate, shouldUpdate;
+              if (date2 === null) {
+                this.setNull();
+                return;
+              }
+              isValidInput = isNumber2(date2) || isDate(date2);
+              newDate = new Date(date2);
+              shouldUpdate = isValidInput && this._isChanged(newDate) && this.isSelectable(newDate);
+              if (shouldUpdate) {
+                newDate = new Date(date2);
+                this._date = newDate;
+                this._calendar.draw({ date: newDate });
+                if (this._timePicker) {
+                  this._timePicker.setTime(newDate.getHours(), newDate.getMinutes(), true);
+                }
+                this._syncToInput();
+                if (!silent) {
+                  this.fire("change");
+                }
+              }
+            },
+            setNull: function() {
+              var calendarDate = this._calendar.getDate();
+              var isChagned = this._date !== null;
+              this._date = null;
+              if (this._datepickerInput) {
+                this._datepickerInput.clearText();
+              }
+              if (this._timePicker) {
+                this._timePicker.setTime(0, 0);
+              }
+              if (!this.isSelectable(calendarDate)) {
+                this._calendar.draw({
+                  date: new Date(this._rangeModel.getMinimumValue())
+                });
+              } else {
+                this._calendar.draw();
+              }
+              if (isChagned) {
+                this.fire("change");
+              }
+            },
+            setDateFormat: function(format) {
+              this._datepickerInput.setFormat(format);
               this._syncToInput();
+            },
+            isOpened: function() {
+              return !hasClass(this._element, CLASS_NAME_HIDDEN);
+            },
+            getTimePicker: function() {
+              return this._timePicker;
+            },
+            getCalendar: function() {
+              return this._calendar;
+            },
+            getLocaleText: function() {
+              return localeTexts[this._language] || localeTexts[DEFAULT_LANGUAGE_TYPE];
+            },
+            setInput: function(element, options) {
+              var prev = this._datepickerInput;
+              var localeText = this.getLocaleText();
+              var prevFormat;
+              options = options || {};
+              if (prev) {
+                prevFormat = prev.getFormat();
+                prev.destroy();
+              }
+              this._datepickerInput = new DatePickerInput(element, {
+                format: options.format || prevFormat,
+                id: this._id,
+                localeText
+              });
+              this._datepickerInput.on(
+                {
+                  change: this._onChangeInput,
+                  click: this.open
+                },
+                this
+              );
+              if (options.syncFromInput) {
+                this._syncFromInput();
+              } else {
+                this._syncToInput();
+              }
+            },
+            enable: function() {
+              if (this._isEnabled) {
+                return;
+              }
+              this._isEnabled = true;
+              this._datepickerInput.enable();
+              forEachArray2(
+                this._openers,
+                function(opener) {
+                  opener.removeAttribute("disabled");
+                  this._setOpenerEvents(opener);
+                },
+                this
+              );
+            },
+            disable: function() {
+              if (!this._isEnabled) {
+                return;
+              }
+              this._isEnabled = false;
+              this.close();
+              this._datepickerInput.disable();
+              forEachArray2(
+                this._openers,
+                function(opener) {
+                  opener.setAttribute("disabled", true);
+                  this._removeOpenerEvents(opener);
+                },
+                this
+              );
+            },
+            isDisabled: function() {
+              return !this._isEnabled;
+            },
+            addCssClass: function(className2) {
+              addClass(this._element, className2);
+            },
+            removeCssClass: function(className2) {
+              removeClass(this._element, className2);
+            },
+            getDateElements: function() {
+              return this._calendar.getDateElements();
+            },
+            findOverlappedRange: function(startDate, endDate) {
+              var startTimestamp = new Date(startDate).getTime();
+              var endTimestamp = new Date(endDate).getTime();
+              var overlappedRange = this._rangeModel.findOverlappedRange(startTimestamp, endTimestamp);
+              return [new Date(overlappedRange[0]), new Date(overlappedRange[1])];
+            },
+            changeLanguage: function(language) {
+              this._language = language;
+              this._calendar.changeLanguage(this._language);
+              this._datepickerInput.changeLocaleTitles(this.getLocaleText().titles);
+              this.setDateFormat(this._datepickerInput.getFormat());
+              if (this._timePicker) {
+                this._timePicker.changeLanguage(this._language);
+              }
+            },
+            destroy: function() {
+              this._removeDocumentEvents();
+              this._calendar.destroy();
+              if (this._timePicker) {
+                this._timePicker.destroy();
+              }
+              if (this._datepickerInput) {
+                this._datepickerInput.destroy();
+              }
+              this._removeEvents();
+              removeElement(this._element);
+              this.removeAllOpeners();
+              this._calendar = this._timePicker = this._datepickerInput = this._container = this._element = this._date = this._rangeModel = this._openers = this._isEnabled = this._id = null;
             }
-          },
-          enable: function() {
-            if (this._isEnabled) {
-              return;
-            }
-            this._isEnabled = true;
-            this._datepickerInput.enable();
-            forEachArray2(this._openers, function(opener) {
-              opener.removeAttribute("disabled");
-              this._setOpenerEvents(opener);
-            }, this);
-          },
-          disable: function() {
-            if (!this._isEnabled) {
-              return;
-            }
-            this._isEnabled = false;
-            this.close();
-            this._datepickerInput.disable();
-            forEachArray2(this._openers, function(opener) {
-              opener.setAttribute("disabled", true);
-              this._removeOpenerEvents(opener);
-            }, this);
-          },
-          isDisabled: function() {
-            return !this._isEnabled;
-          },
-          addCssClass: function(className2) {
-            addClass(this._element, className2);
-          },
-          removeCssClass: function(className2) {
-            removeClass(this._element, className2);
-          },
-          getDateElements: function() {
-            return this._calendar.getDateElements();
-          },
-          findOverlappedRange: function(startDate, endDate) {
-            var startTimestamp = new Date(startDate).getTime();
-            var endTimestamp = new Date(endDate).getTime();
-            var overlappedRange = this._rangeModel.findOverlappedRange(startTimestamp, endTimestamp);
-            return [new Date(overlappedRange[0]), new Date(overlappedRange[1])];
-          },
-          changeLanguage: function(language) {
-            this._language = language;
-            this._calendar.changeLanguage(this._language);
-            this._datepickerInput.changeLocaleTitles(this.getLocaleText().titles);
-            this.setDateFormat(this._datepickerInput.getFormat());
-            if (this._timePicker) {
-              this._timePicker.changeLanguage(this._language);
-            }
-          },
-          destroy: function() {
-            this._removeDocumentEvents();
-            this._calendar.destroy();
-            if (this._timePicker) {
-              this._timePicker.destroy();
-            }
-            if (this._datepickerInput) {
-              this._datepickerInput.destroy();
-            }
-            this._removeEvents();
-            removeElement(this._element);
-            this.removeAllOpeners();
-            this._calendar = this._timePicker = this._datepickerInput = this._container = this._element = this._date = this._rangeModel = this._openers = this._isEnabled = this._id = null;
           }
-        });
+        );
         CustomEvents2.mixin(DatePicker2);
         module2.exports = DatePicker2;
       },
@@ -3559,200 +3651,215 @@ var tuiTimePicker = { exports: {} };
         var CLASS_NAME_HIDDEN = "tui-hidden";
         var HEADER_SELECTOR = ".tui-calendar-header";
         var BODY_SELECTOR = ".tui-calendar-body";
-        var Calendar2 = defineClass({
-          static: {
-            localeTexts
-          },
-          init: function(container, options) {
-            options = extend2({
-              language: DEFAULT_LANGUAGE_TYPE,
-              showToday: true,
-              showJumpButtons: false,
-              date: new Date(),
-              type: TYPE_DATE,
-              usageStatistics: true,
-              weekStartDay: DEFAULT_WEEK_START_DAY
-            }, options);
-            this._container = util.getElement(container);
-            this._container.innerHTML = '<div class="tui-calendar">    <div class="tui-calendar-header"></div>    <div class="tui-calendar-body"></div></div>';
-            this._element = this._container.firstChild;
-            this._date = null;
-            this._type = null;
-            this._header = null;
-            this._body = null;
-            this._initHeader(options);
-            this._initBody(options);
-            this.draw({
-              date: options.date,
-              type: options.type
-            });
-            if (options.usageStatistics) {
-              util.sendHostName();
-            }
-          },
-          _initHeader: function(options) {
-            var headerContainer = this._element.querySelector(HEADER_SELECTOR);
-            this._header = new Header(headerContainer, options);
-            this._header.on("click", function(ev) {
-              var target = util.getTarget(ev);
-              if (hasClass(target, CLASS_NAME_PREV_MONTH_BTN)) {
-                this.drawPrev();
-              } else if (hasClass(target, CLASS_NAME_PREV_YEAR_BTN)) {
-                this._onClickPrevYear();
-              } else if (hasClass(target, CLASS_NAME_NEXT_MONTH_BTN)) {
-                this.drawNext();
-              } else if (hasClass(target, CLASS_NAME_NEXT_YEAR_BTN)) {
-                this._onClickNextYear();
+        var Calendar2 = defineClass(
+          {
+            static: {
+              localeTexts
+            },
+            init: function(container, options) {
+              options = extend2(
+                {
+                  language: DEFAULT_LANGUAGE_TYPE,
+                  showToday: true,
+                  showJumpButtons: false,
+                  date: new Date(),
+                  type: TYPE_DATE,
+                  usageStatistics: true,
+                  weekStartDay: DEFAULT_WEEK_START_DAY
+                },
+                options
+              );
+              this._container = util.getElement(container);
+              this._container.innerHTML = '<div class="tui-calendar">    <div class="tui-calendar-header"></div>    <div class="tui-calendar-body"></div></div>';
+              this._element = this._container.firstChild;
+              this._date = null;
+              this._type = null;
+              this._header = null;
+              this._body = null;
+              this._initHeader(options);
+              this._initBody(options);
+              this.draw({
+                date: options.date,
+                type: options.type
+              });
+              if (options.usageStatistics) {
+                util.sendHostName();
               }
-            }, this);
-          },
-          _initBody: function(options) {
-            var bodyContainer = this._element.querySelector(BODY_SELECTOR);
-            this._body = new Body(bodyContainer, options);
-          },
-          _onClickPrevYear: function() {
-            if (this.getType() === TYPE_DATE) {
-              this.draw({
-                date: this._getRelativeDate(-12)
+            },
+            _initHeader: function(options) {
+              var headerContainer = this._element.querySelector(HEADER_SELECTOR);
+              this._header = new Header(headerContainer, options);
+              this._header.on(
+                "click",
+                function(ev) {
+                  var target = util.getTarget(ev);
+                  if (hasClass(target, CLASS_NAME_PREV_MONTH_BTN)) {
+                    this.drawPrev();
+                  } else if (hasClass(target, CLASS_NAME_PREV_YEAR_BTN)) {
+                    this._onClickPrevYear();
+                  } else if (hasClass(target, CLASS_NAME_NEXT_MONTH_BTN)) {
+                    this.drawNext();
+                  } else if (hasClass(target, CLASS_NAME_NEXT_YEAR_BTN)) {
+                    this._onClickNextYear();
+                  }
+                },
+                this
+              );
+            },
+            _initBody: function(options) {
+              var bodyContainer = this._element.querySelector(BODY_SELECTOR);
+              this._body = new Body(bodyContainer, options);
+            },
+            _onClickPrevYear: function() {
+              if (this.getType() === TYPE_DATE) {
+                this.draw({
+                  date: this._getRelativeDate(-12)
+                });
+              } else {
+                this.drawPrev();
+              }
+            },
+            _onClickNextYear: function() {
+              if (this.getType() === TYPE_DATE) {
+                this.draw({
+                  date: this._getRelativeDate(12)
+                });
+              } else {
+                this.drawNext();
+              }
+            },
+            _isValidType: function(type) {
+              return type === TYPE_DATE || type === TYPE_MONTH || type === TYPE_YEAR;
+            },
+            _shouldUpdate: function(date2, type) {
+              var prevDate = this._date;
+              if (!dateUtil.isValidDate(date2)) {
+                throw new Error("Invalid date");
+              }
+              if (!this._isValidType(type)) {
+                throw new Error("Invalid layer type");
+              }
+              return !prevDate || prevDate.getFullYear() !== date2.getFullYear() || prevDate.getMonth() !== date2.getMonth() || this.getType() !== type;
+            },
+            _render: function() {
+              var date2 = this._date;
+              var type = this.getType();
+              this._header.render(date2, type);
+              this._body.render(date2, type);
+              removeClass(this._element, CLASS_NAME_CALENDAR_MONTH, CLASS_NAME_CALENDAR_YEAR);
+              switch (type) {
+                case TYPE_MONTH:
+                  addClass(this._element, CLASS_NAME_CALENDAR_MONTH);
+                  break;
+                case TYPE_YEAR:
+                  addClass(this._element, CLASS_NAME_CALENDAR_YEAR);
+                  break;
+              }
+            },
+            _getRelativeDate: function(step) {
+              var prev = this._date;
+              return new Date(prev.getFullYear(), prev.getMonth() + step);
+            },
+            draw: function(options) {
+              var date2, type;
+              options = options || {};
+              date2 = options.date || this._date;
+              type = (options.type || this.getType()).toLowerCase();
+              if (this._shouldUpdate(date2, type)) {
+                this._date = date2;
+                this._type = type;
+                this._render();
+              }
+              this.fire("draw", {
+                date: this._date,
+                type,
+                dateElements: this._body.getDateElements()
               });
-            } else {
-              this.drawPrev();
-            }
-          },
-          _onClickNextYear: function() {
-            if (this.getType() === TYPE_DATE) {
+            },
+            show: function() {
+              removeClass(this._element, CLASS_NAME_HIDDEN);
+            },
+            hide: function() {
+              addClass(this._element, CLASS_NAME_HIDDEN);
+            },
+            drawNext: function() {
               this.draw({
-                date: this._getRelativeDate(12)
+                date: this.getNextDate()
               });
-            } else {
-              this.drawNext();
-            }
-          },
-          _isValidType: function(type) {
-            return type === TYPE_DATE || type === TYPE_MONTH || type === TYPE_YEAR;
-          },
-          _shouldUpdate: function(date2, type) {
-            var prevDate = this._date;
-            if (!dateUtil.isValidDate(date2)) {
-              throw new Error("Invalid date");
-            }
-            if (!this._isValidType(type)) {
-              throw new Error("Invalid layer type");
-            }
-            return !prevDate || prevDate.getFullYear() !== date2.getFullYear() || prevDate.getMonth() !== date2.getMonth() || this.getType() !== type;
-          },
-          _render: function() {
-            var date2 = this._date;
-            var type = this.getType();
-            this._header.render(date2, type);
-            this._body.render(date2, type);
-            removeClass(this._element, CLASS_NAME_CALENDAR_MONTH, CLASS_NAME_CALENDAR_YEAR);
-            switch (type) {
-              case TYPE_MONTH:
-                addClass(this._element, CLASS_NAME_CALENDAR_MONTH);
-                break;
-              case TYPE_YEAR:
-                addClass(this._element, CLASS_NAME_CALENDAR_YEAR);
-                break;
-            }
-          },
-          _getRelativeDate: function(step) {
-            var prev = this._date;
-            return new Date(prev.getFullYear(), prev.getMonth() + step);
-          },
-          draw: function(options) {
-            var date2, type;
-            options = options || {};
-            date2 = options.date || this._date;
-            type = (options.type || this.getType()).toLowerCase();
-            if (this._shouldUpdate(date2, type)) {
-              this._date = date2;
-              this._type = type;
+            },
+            drawPrev: function() {
+              this.draw({
+                date: this.getPrevDate()
+              });
+            },
+            getNextDate: function() {
+              if (this.getType() === TYPE_DATE) {
+                return this._getRelativeDate(1);
+              }
+              return this.getNextYearDate();
+            },
+            getPrevDate: function() {
+              if (this.getType() === TYPE_DATE) {
+                return this._getRelativeDate(-1);
+              }
+              return this.getPrevYearDate();
+            },
+            getNextYearDate: function(customStep) {
+              if (customStep) {
+                return this._getRelativeDate(customStep);
+              }
+              switch (this.getType()) {
+                case TYPE_DATE:
+                case TYPE_MONTH:
+                  return this._getRelativeDate(12);
+                case TYPE_YEAR:
+                  return this._getRelativeDate(108);
+                default:
+                  throw new Error("Unknown layer type");
+              }
+            },
+            getPrevYearDate: function(customStep) {
+              if (customStep) {
+                return this._getRelativeDate(customStep);
+              }
+              switch (this.getType()) {
+                case TYPE_DATE:
+                case TYPE_MONTH:
+                  return this._getRelativeDate(-12);
+                case TYPE_YEAR:
+                  return this._getRelativeDate(-108);
+                default:
+                  throw new Error("Unknown layer type");
+              }
+            },
+            changeLanguage: function(language) {
+              this._header.changeLanguage(language);
+              this._body.changeLanguage(language);
               this._render();
+            },
+            getDate: function() {
+              return new Date(this._date);
+            },
+            getType: function() {
+              return this._type;
+            },
+            getDateElements: function() {
+              return this._body.getDateElements();
+            },
+            addCssClass: function(className2) {
+              addClass(this._element, className2);
+            },
+            removeCssClass: function(className2) {
+              removeClass(this._element, className2);
+            },
+            destroy: function() {
+              this._header.destroy();
+              this._body.destroy();
+              removeElement(this._element);
+              this._type = this._date = this._container = this._element = this._header = this._body = null;
             }
-            this.fire("draw", {
-              date: this._date,
-              type,
-              dateElements: this._body.getDateElements()
-            });
-          },
-          show: function() {
-            removeClass(this._element, CLASS_NAME_HIDDEN);
-          },
-          hide: function() {
-            addClass(this._element, CLASS_NAME_HIDDEN);
-          },
-          drawNext: function() {
-            this.draw({
-              date: this.getNextDate()
-            });
-          },
-          drawPrev: function() {
-            this.draw({
-              date: this.getPrevDate()
-            });
-          },
-          getNextDate: function() {
-            if (this.getType() === TYPE_DATE) {
-              return this._getRelativeDate(1);
-            }
-            return this.getNextYearDate();
-          },
-          getPrevDate: function() {
-            if (this.getType() === TYPE_DATE) {
-              return this._getRelativeDate(-1);
-            }
-            return this.getPrevYearDate();
-          },
-          getNextYearDate: function() {
-            switch (this.getType()) {
-              case TYPE_DATE:
-              case TYPE_MONTH:
-                return this._getRelativeDate(12);
-              case TYPE_YEAR:
-                return this._getRelativeDate(108);
-              default:
-                throw new Error("Unknown layer type");
-            }
-          },
-          getPrevYearDate: function() {
-            switch (this.getType()) {
-              case TYPE_DATE:
-              case TYPE_MONTH:
-                return this._getRelativeDate(-12);
-              case TYPE_YEAR:
-                return this._getRelativeDate(-108);
-              default:
-                throw new Error("Unknown layer type");
-            }
-          },
-          changeLanguage: function(language) {
-            this._header.changeLanguage(language);
-            this._body.changeLanguage(language);
-            this._render();
-          },
-          getDate: function() {
-            return new Date(this._date);
-          },
-          getType: function() {
-            return this._type;
-          },
-          getDateElements: function() {
-            return this._body.getDateElements();
-          },
-          addCssClass: function(className2) {
-            addClass(this._element, className2);
-          },
-          removeCssClass: function(className2) {
-            removeClass(this._element, className2);
-          },
-          destroy: function() {
-            this._header.destroy();
-            this._body.destroy();
-            removeElement(this._element);
-            this._type = this._date = this._container = this._element = this._header = this._body = null;
           }
-        });
+        );
         CustomEvents2.mixin(Calendar2);
         module2.exports = Calendar2;
       },
@@ -3851,115 +3958,123 @@ var tuiTimePicker = { exports: {} };
             type: constants.TYPE_MERIDIEM
           }
         };
-        var DateTimeFormatter = defineClass({
-          init: function(rawStr, titles) {
-            this._rawStr = rawStr;
-            this._keyOrder = null;
-            this._regExp = null;
-            this._titles = titles || localeTexts.en.titles;
-            this._parseFormat();
-          },
-          _parseFormat: function() {
-            var regExpStr = "^";
-            var matchedKeys = this._rawStr.match(rFormableKeys);
-            var keyOrder = [];
-            matchedKeys = util.filter(matchedKeys, function(key) {
-              return key[0] !== "\\";
-            });
-            forEachArray2(matchedKeys, function(key, index) {
-              if (!/m/i.test(key)) {
-                key = key.toLowerCase();
-              }
-              regExpStr += mapForConverting[key].expression + "[\\D\\s]*";
-              keyOrder[index] = mapForConverting[key].type;
-            });
-            regExpStr += "$";
-            this._keyOrder = keyOrder;
-            this._regExp = new RegExp(regExpStr, "gi");
-          },
-          parse: function(str) {
-            var dateHash = {
-              year: 0,
-              month: 1,
-              date: 1,
-              hour: 0,
-              minute: 0
-            };
-            var hasMeridiem = false;
-            var isPM = false;
-            var matched;
-            this._regExp.lastIndex = 0;
-            matched = this._regExp.exec(str);
-            if (!matched) {
-              throw Error('DateTimeFormatter: Not matched - "' + str + '"');
-            }
-            forEachArray2(this._keyOrder, function(name, index) {
-              var value = matched[index + 1];
-              if (name === constants.TYPE_MERIDIEM && /[ap]m/i.test(value)) {
-                hasMeridiem = true;
-                isPM = /pm/i.test(value);
-              } else {
-                value = Number(value);
-                if (value !== 0 && !value) {
-                  throw Error("DateTimeFormatter: Unknown value - " + matched[index + 1]);
+        var DateTimeFormatter = defineClass(
+          {
+            init: function(rawStr, titles) {
+              this._rawStr = rawStr;
+              this._keyOrder = null;
+              this._regExp = null;
+              this._titles = titles || localeTexts.en.titles;
+              this._parseFormat();
+            },
+            _parseFormat: function() {
+              var regExpStr = "^";
+              var matchedKeys = this._rawStr.match(rFormableKeys);
+              var keyOrder = [];
+              matchedKeys = util.filter(matchedKeys, function(key) {
+                return key[0] !== "\\";
+              });
+              forEachArray2(matchedKeys, function(key, index) {
+                if (!/m/i.test(key)) {
+                  key = key.toLowerCase();
                 }
-                if (name === constants.TYPE_YEAR && value < 100) {
-                  value += 2e3;
+                regExpStr += mapForConverting[key].expression + "[\\D\\s]*";
+                keyOrder[index] = mapForConverting[key].type;
+              });
+              regExpStr += "$";
+              this._keyOrder = keyOrder;
+              this._regExp = new RegExp(regExpStr, "gi");
+            },
+            parse: function(str) {
+              var dateHash = {
+                year: 0,
+                month: 1,
+                date: 1,
+                hour: 0,
+                minute: 0
+              };
+              var hasMeridiem = false;
+              var isPM = false;
+              var matched;
+              this._regExp.lastIndex = 0;
+              matched = this._regExp.exec(str);
+              if (!matched) {
+                throw Error('DateTimeFormatter: Not matched - "' + str + '"');
+              }
+              forEachArray2(this._keyOrder, function(name, index) {
+                var value = matched[index + 1];
+                if (name === constants.TYPE_MERIDIEM && /[ap]m/i.test(value)) {
+                  hasMeridiem = true;
+                  isPM = /pm/i.test(value);
+                } else {
+                  value = Number(value);
+                  if (value !== 0 && !value) {
+                    throw Error("DateTimeFormatter: Unknown value - " + matched[index + 1]);
+                  }
+                  if (name === constants.TYPE_YEAR && value < 100) {
+                    value += 2e3;
+                  }
+                  dateHash[name] = value;
                 }
-                dateHash[name] = value;
+              });
+              if (hasMeridiem) {
+                isPM = isPM || dateHash.hour > 12;
+                dateHash.hour %= 12;
+                if (isPM) {
+                  dateHash.hour += 12;
+                }
               }
-            });
-            if (hasMeridiem) {
-              isPM = isPM || dateHash.hour > 12;
-              dateHash.hour %= 12;
-              if (isPM) {
-                dateHash.hour += 12;
+              return new Date(
+                dateHash.year,
+                dateHash.month - 1,
+                dateHash.date,
+                dateHash.hour,
+                dateHash.minute
+              );
+            },
+            getRawString: function() {
+              return this._rawStr;
+            },
+            format: function(dateObj) {
+              var year = dateObj.getFullYear();
+              var month = dateObj.getMonth() + 1;
+              var dayInMonth = dateObj.getDate();
+              var day = dateObj.getDay();
+              var hour = dateObj.getHours();
+              var minute = dateObj.getMinutes();
+              var meridiem = "a";
+              var replaceMap;
+              if (inArray(constants.TYPE_MERIDIEM, this._keyOrder) > -1) {
+                meridiem = hour >= 12 ? "pm" : "am";
+                hour = dateUtil.getMeridiemHour(hour);
               }
+              replaceMap = {
+                yyyy: year,
+                yy: String(year).substr(2, 2),
+                M: month,
+                MM: dateUtil.prependLeadingZero(month),
+                MMM: this._titles.MMM[month - 1],
+                MMMM: this._titles.MMMM[month - 1],
+                d: dayInMonth,
+                dd: dateUtil.prependLeadingZero(dayInMonth),
+                D: this._titles.D[day],
+                DD: this._titles.DD[day],
+                hh: dateUtil.prependLeadingZero(hour),
+                h: hour,
+                mm: dateUtil.prependLeadingZero(minute),
+                m: minute,
+                A: meridiem.toUpperCase(),
+                a: meridiem
+              };
+              return this._rawStr.replace(rFormableKeys, function(key) {
+                if (key[0] === "\\") {
+                  return key.substr(1);
+                }
+                return replaceMap[key] || replaceMap[key.toLowerCase()] || "";
+              });
             }
-            return new Date(dateHash.year, dateHash.month - 1, dateHash.date, dateHash.hour, dateHash.minute);
-          },
-          getRawString: function() {
-            return this._rawStr;
-          },
-          format: function(dateObj) {
-            var year = dateObj.getFullYear();
-            var month = dateObj.getMonth() + 1;
-            var dayInMonth = dateObj.getDate();
-            var day = dateObj.getDay();
-            var hour = dateObj.getHours();
-            var minute = dateObj.getMinutes();
-            var meridiem = "a";
-            var replaceMap;
-            if (inArray(constants.TYPE_MERIDIEM, this._keyOrder) > -1) {
-              meridiem = hour >= 12 ? "pm" : "am";
-              hour = dateUtil.getMeridiemHour(hour);
-            }
-            replaceMap = {
-              yyyy: year,
-              yy: String(year).substr(2, 2),
-              M: month,
-              MM: dateUtil.prependLeadingZero(month),
-              MMM: this._titles.MMM[month - 1],
-              MMMM: this._titles.MMMM[month - 1],
-              d: dayInMonth,
-              dd: dateUtil.prependLeadingZero(dayInMonth),
-              D: this._titles.D[day],
-              DD: this._titles.DD[day],
-              hh: dateUtil.prependLeadingZero(hour),
-              h: hour,
-              mm: dateUtil.prependLeadingZero(minute),
-              m: minute,
-              A: meridiem.toUpperCase(),
-              a: meridiem
-            };
-            return this._rawStr.replace(rFormableKeys, function(key) {
-              if (key[0] === "\\") {
-                return key.substr(1);
-              }
-              return replaceMap[key] || replaceMap[key.toLowerCase()] || "";
-            });
           }
-        });
+        );
         module2.exports = DateTimeFormatter;
       },
       function(module2, exports2, __webpack_require__) {
@@ -4179,90 +4294,95 @@ var tuiTimePicker = { exports: {} };
         var SELECTOR_INFO_ELEM = ".tui-calendar-header-info";
         var SELECTOR_BTN = ".tui-calendar-btn";
         var YEAR_TITLE_FORMAT = "yyyy";
-        var Header = defineClass({
-          init: function(container, option) {
-            this._container = util.getElement(container);
-            this._innerElement = null;
-            this._infoElement = null;
-            this._showToday = option.showToday;
-            this._showJumpButtons = option.showJumpButtons;
-            this._yearMonthTitleFormatter = null;
-            this._yearTitleFormatter = null;
-            this._todayFormatter = null;
-            this._setFormatters(localeTexts[option.language]);
-            this._setEvents(option);
-          },
-          _setFormatters: function(localeText) {
-            this._yearMonthTitleFormatter = new DateTimeFormatter(localeText.titleFormat, localeText.titles);
-            this._yearTitleFormatter = new DateTimeFormatter(YEAR_TITLE_FORMAT, localeText.titles);
-            this._todayFormatter = new DateTimeFormatter(localeText.todayFormat, localeText.titles);
-          },
-          _setEvents: function() {
-            mouseTouchEvent.on(this._container, "click", this._onClickHandler, this);
-          },
-          _removeEvents: function() {
-            this.off();
-            mouseTouchEvent.off(this._container, "click", this._onClickHandler);
-          },
-          _onClickHandler: function(ev) {
-            var target = util.getTarget(ev);
-            if (closest(target, SELECTOR_BTN)) {
-              this.fire("click", ev);
+        var Header = defineClass(
+          {
+            init: function(container, option) {
+              this._container = util.getElement(container);
+              this._innerElement = null;
+              this._infoElement = null;
+              this._showToday = option.showToday;
+              this._showJumpButtons = option.showJumpButtons;
+              this._yearMonthTitleFormatter = null;
+              this._yearTitleFormatter = null;
+              this._todayFormatter = null;
+              this._setFormatters(localeTexts[option.language]);
+              this._setEvents(option);
+            },
+            _setFormatters: function(localeText) {
+              this._yearMonthTitleFormatter = new DateTimeFormatter(
+                localeText.titleFormat,
+                localeText.titles
+              );
+              this._yearTitleFormatter = new DateTimeFormatter(YEAR_TITLE_FORMAT, localeText.titles);
+              this._todayFormatter = new DateTimeFormatter(localeText.todayFormat, localeText.titles);
+            },
+            _setEvents: function() {
+              mouseTouchEvent.on(this._container, "click", this._onClickHandler, this);
+            },
+            _removeEvents: function() {
+              this.off();
+              mouseTouchEvent.off(this._container, "click", this._onClickHandler);
+            },
+            _onClickHandler: function(ev) {
+              var target = util.getTarget(ev);
+              if (closest(target, SELECTOR_BTN)) {
+                this.fire("click", ev);
+              }
+            },
+            _getTitleClass: function(type) {
+              switch (type) {
+                case TYPE_DATE:
+                  return CLASS_NAME_TITLE_MONTH;
+                case TYPE_MONTH:
+                  return CLASS_NAME_TITLE_YEAR;
+                case TYPE_YEAR:
+                  return CLASS_NAME_TITLE_YEAR_TO_YEAR;
+                default:
+                  return "";
+              }
+            },
+            _getTitleText: function(date2, type) {
+              var currentYear, start, end;
+              switch (type) {
+                case TYPE_DATE:
+                  return this._yearMonthTitleFormatter.format(date2);
+                case TYPE_MONTH:
+                  return this._yearTitleFormatter.format(date2);
+                case TYPE_YEAR:
+                  currentYear = date2.getFullYear();
+                  start = new Date(currentYear - 4, 0, 1);
+                  end = new Date(currentYear + 4, 0, 1);
+                  return this._yearTitleFormatter.format(start) + " - " + this._yearTitleFormatter.format(end);
+                default:
+                  return "";
+              }
+            },
+            changeLanguage: function(language) {
+              this._setFormatters(localeTexts[language]);
+            },
+            render: function(date2, type) {
+              var context = {
+                showToday: this._showToday,
+                showJumpButtons: this._showJumpButtons,
+                todayText: this._todayFormatter.format(new Date()),
+                isDateCalendar: type === TYPE_DATE,
+                titleClass: this._getTitleClass(type),
+                title: this._getTitleText(date2, type)
+              };
+              this._container.innerHTML = headerTmpl(context).replace(/^\s+|\s+$/g, "");
+              this._innerElement = this._container.querySelector(SELECTOR_INNER_ELEM);
+              if (context.showToday) {
+                this._infoElement = this._container.querySelector(SELECTOR_INFO_ELEM);
+              }
+            },
+            destroy: function() {
+              this._removeEvents();
+              removeElement(this._innerElement);
+              removeElement(this._infoElement);
+              this._container = this._showToday = this._showJumpButtons = this._yearMonthTitleFormatter = this._yearTitleFormatter = this._todayFormatter = this._innerElement = this._infoElement = null;
             }
-          },
-          _getTitleClass: function(type) {
-            switch (type) {
-              case TYPE_DATE:
-                return CLASS_NAME_TITLE_MONTH;
-              case TYPE_MONTH:
-                return CLASS_NAME_TITLE_YEAR;
-              case TYPE_YEAR:
-                return CLASS_NAME_TITLE_YEAR_TO_YEAR;
-              default:
-                return "";
-            }
-          },
-          _getTitleText: function(date2, type) {
-            var currentYear, start, end;
-            switch (type) {
-              case TYPE_DATE:
-                return this._yearMonthTitleFormatter.format(date2);
-              case TYPE_MONTH:
-                return this._yearTitleFormatter.format(date2);
-              case TYPE_YEAR:
-                currentYear = date2.getFullYear();
-                start = new Date(currentYear - 4, 0, 1);
-                end = new Date(currentYear + 4, 0, 1);
-                return this._yearTitleFormatter.format(start) + " - " + this._yearTitleFormatter.format(end);
-              default:
-                return "";
-            }
-          },
-          changeLanguage: function(language) {
-            this._setFormatters(localeTexts[language]);
-          },
-          render: function(date2, type) {
-            var context = {
-              showToday: this._showToday,
-              showJumpButtons: this._showJumpButtons,
-              todayText: this._todayFormatter.format(new Date()),
-              isDateCalendar: type === TYPE_DATE,
-              titleClass: this._getTitleClass(type),
-              title: this._getTitleText(date2, type)
-            };
-            this._container.innerHTML = headerTmpl(context).replace(/^\s+|\s+$/g, "");
-            this._innerElement = this._container.querySelector(SELECTOR_INNER_ELEM);
-            if (context.showToday) {
-              this._infoElement = this._container.querySelector(SELECTOR_INFO_ELEM);
-            }
-          },
-          destroy: function() {
-            this._removeEvents();
-            removeElement(this._innerElement);
-            removeElement(this._infoElement);
-            this._container = this._showToday = this._showJumpButtons = this._yearMonthTitleFormatter = this._yearTitleFormatter = this._todayFormatter = this._innerElement = this._infoElement = null;
           }
-        });
+        );
         CustomEvents2.mixin(Header);
         module2.exports = Header;
       },
@@ -4348,53 +4468,55 @@ var tuiTimePicker = { exports: {} };
         var TYPE_DATE = constants.TYPE_DATE;
         var TYPE_MONTH = constants.TYPE_MONTH;
         var TYPE_YEAR = constants.TYPE_YEAR;
-        var Body = defineClass({
-          init: function(bodyContainer, options) {
-            var language = options.language;
-            var weekStartDay = options.weekStartDay;
-            this._container = bodyContainer;
-            this._dateLayer = new DateLayer(language, weekStartDay);
-            this._monthLayer = new MonthLayer(language);
-            this._yearLayer = new YearLayer(language);
-            this._currentLayer = this._dateLayer;
-          },
-          _getLayer: function(type) {
-            switch (type) {
-              case TYPE_DATE:
-                return this._dateLayer;
-              case TYPE_MONTH:
-                return this._monthLayer;
-              case TYPE_YEAR:
-                return this._yearLayer;
-              default:
-                return this._currentLayer;
+        var Body = defineClass(
+          {
+            init: function(bodyContainer, options) {
+              var language = options.language;
+              var weekStartDay = options.weekStartDay;
+              this._container = bodyContainer;
+              this._dateLayer = new DateLayer(language, weekStartDay);
+              this._monthLayer = new MonthLayer(language);
+              this._yearLayer = new YearLayer(language);
+              this._currentLayer = this._dateLayer;
+            },
+            _getLayer: function(type) {
+              switch (type) {
+                case TYPE_DATE:
+                  return this._dateLayer;
+                case TYPE_MONTH:
+                  return this._monthLayer;
+                case TYPE_YEAR:
+                  return this._yearLayer;
+                default:
+                  return this._currentLayer;
+              }
+            },
+            _eachLayer: function(fn2) {
+              forEachArray2([this._dateLayer, this._monthLayer, this._yearLayer], fn2);
+            },
+            changeLanguage: function(language) {
+              this._eachLayer(function(layer) {
+                layer.changeLanguage(language);
+              });
+            },
+            render: function(date2, type) {
+              var nextLayer = this._getLayer(type);
+              var prevLayer = this._currentLayer;
+              prevLayer.remove();
+              nextLayer.render(date2, this._container);
+              this._currentLayer = nextLayer;
+            },
+            getDateElements: function() {
+              return this._currentLayer.getDateElements();
+            },
+            destroy: function() {
+              this._eachLayer(function(layer) {
+                layer.remove();
+              });
+              this._container = this._currentLayer = this._dateLayer = this._monthLayer = this._yearLayer = null;
             }
-          },
-          _eachLayer: function(fn2) {
-            forEachArray2([this._dateLayer, this._monthLayer, this._yearLayer], fn2);
-          },
-          changeLanguage: function(language) {
-            this._eachLayer(function(layer) {
-              layer.changeLanguage(language);
-            });
-          },
-          render: function(date2, type) {
-            var nextLayer = this._getLayer(type);
-            var prevLayer = this._currentLayer;
-            prevLayer.remove();
-            nextLayer.render(date2, this._container);
-            this._currentLayer = nextLayer;
-          },
-          getDateElements: function() {
-            return this._currentLayer.getDateElements();
-          },
-          destroy: function() {
-            this._eachLayer(function(layer) {
-              layer.remove();
-            });
-            this._container = this._currentLayer = this._dateLayer = this._monthLayer = this._yearLayer = null;
           }
-        });
+        );
         module2.exports = Body;
       },
       function(module2, exports2, __webpack_require__) {
@@ -4406,104 +4528,107 @@ var tuiTimePicker = { exports: {} };
         var WEEK_START_DAY_MAP = __webpack_require__(1).WEEK_START_DAY_MAP;
         var DATE_SELECTOR = ".tui-calendar-date";
         var DAYS_OF_WEEK = 7;
-        var DateLayer = defineClass(LayerBase, {
-          init: function(language, weekStartDay) {
-            LayerBase.call(this, language);
-            this.weekStartDay = WEEK_START_DAY_MAP[String(weekStartDay).toLowerCase()] || 0;
-          },
-          _type: TYPE_DATE,
-          _makeContext: function(date2) {
-            var daysShort = this._localeText.titles.D;
-            var year, month, days, i2;
-            date2 = date2 || new Date();
-            year = date2.getFullYear();
-            month = date2.getMonth() + 1;
-            if (this.weekStartDay) {
-              days = daysShort.slice();
-              for (i2 = 0; i2 < this.weekStartDay; i2 += 1) {
-                days.push(days.shift());
+        var DateLayer = defineClass(
+          LayerBase,
+          {
+            init: function(language, weekStartDay) {
+              LayerBase.call(this, language);
+              this.weekStartDay = WEEK_START_DAY_MAP[String(weekStartDay).toLowerCase()] || 0;
+            },
+            _type: TYPE_DATE,
+            _makeContext: function(date2) {
+              var daysShort = this._localeText.titles.D;
+              var year, month, days, i2;
+              date2 = date2 || new Date();
+              year = date2.getFullYear();
+              month = date2.getMonth() + 1;
+              if (this.weekStartDay) {
+                days = daysShort.slice();
+                for (i2 = 0; i2 < this.weekStartDay; i2 += 1) {
+                  days.push(days.shift());
+                }
+                daysShort = days;
               }
-              daysShort = days;
-            }
-            return {
-              Sun: daysShort[0],
-              Mon: daysShort[1],
-              Tue: daysShort[2],
-              Wed: daysShort[3],
-              Thu: daysShort[4],
-              Fri: daysShort[5],
-              Sat: daysShort[6],
-              year,
-              month,
-              weeks: this._getWeeks(year, month)
-            };
-          },
-          _getWeeks: function(year, month) {
-            var weekNumber = 0;
-            var weeksCount = 6;
-            var weeks = [];
-            var week, dates, i2;
-            while (weekNumber < weeksCount) {
-              dates = [];
+              return {
+                Sun: daysShort[0],
+                Mon: daysShort[1],
+                Tue: daysShort[2],
+                Wed: daysShort[3],
+                Thu: daysShort[4],
+                Fri: daysShort[5],
+                Sat: daysShort[6],
+                year,
+                month,
+                weeks: this._getWeeks(year, month)
+              };
+            },
+            _getWeeks: function(year, month) {
+              var weekNumber = 0;
+              var weeksCount = 6;
+              var weeks = [];
+              var week, dates, i2;
+              while (weekNumber < weeksCount) {
+                dates = [];
+                for (i2 = this.weekStartDay; i2 < DAYS_OF_WEEK + this.weekStartDay; i2 += 1) {
+                  dates.push(dateUtil.getDateOfWeek(year, month, weekNumber, i2));
+                }
+                week = this._getWeek(year, month, dates);
+                if (this.weekStartDay && !_isFirstWeek(weekNumber, week[0].dayInMonth)) {
+                  weeks.push(this._getFirstWeek(year, month));
+                  weeksCount -= 1;
+                }
+                weeks.push(week);
+                weekNumber += 1;
+              }
+              return weeks;
+            },
+            _getWeek: function(currentYear, currentMonth, dates) {
+              var firstDateOfCurrentMonth = new Date(currentYear, currentMonth - 1, 1);
+              var lastDateOfCurrentMonth = new Date(currentYear, currentMonth, 0);
+              var contexts = [];
+              var i2 = 0;
+              var length = dates.length;
+              var date2, className2;
+              for (; i2 < length; i2 += 1) {
+                className2 = "tui-calendar-date";
+                date2 = dates[i2];
+                if (date2 < firstDateOfCurrentMonth) {
+                  className2 += " tui-calendar-prev-month";
+                }
+                if (date2 > lastDateOfCurrentMonth) {
+                  className2 += " tui-calendar-next-month";
+                }
+                if (date2.getDay() === 0) {
+                  className2 += " tui-calendar-sun";
+                } else if (date2.getDay() === 6) {
+                  className2 += " tui-calendar-sat";
+                }
+                contexts.push({
+                  dayInMonth: date2.getDate(),
+                  className: className2,
+                  timestamp: date2.getTime()
+                });
+              }
+              return contexts;
+            },
+            render: function(date2, container) {
+              var context = this._makeContext(date2);
+              container.innerHTML = bodyTmpl(context);
+              this._element = container.firstChild;
+            },
+            getDateElements: function() {
+              return this._element.querySelectorAll(DATE_SELECTOR);
+            },
+            _getFirstWeek: function(year, month) {
+              var firstWeekDates = [];
+              var i2;
               for (i2 = this.weekStartDay; i2 < DAYS_OF_WEEK + this.weekStartDay; i2 += 1) {
-                dates.push(dateUtil.getDateOfWeek(year, month, weekNumber, i2));
+                firstWeekDates.push(dateUtil.getDateOfWeek(year, month, -1, i2));
               }
-              week = this._getWeek(year, month, dates);
-              if (this.weekStartDay && !_isFirstWeek(weekNumber, week[0].dayInMonth)) {
-                weeks.push(this._getFirstWeek(year, month));
-                weeksCount -= 1;
-              }
-              weeks.push(week);
-              weekNumber += 1;
+              return this._getWeek(year, month, firstWeekDates);
             }
-            return weeks;
-          },
-          _getWeek: function(currentYear, currentMonth, dates) {
-            var firstDateOfCurrentMonth = new Date(currentYear, currentMonth - 1, 1);
-            var lastDateOfCurrentMonth = new Date(currentYear, currentMonth, 0);
-            var contexts = [];
-            var i2 = 0;
-            var length = dates.length;
-            var date2, className2;
-            for (; i2 < length; i2 += 1) {
-              className2 = "tui-calendar-date";
-              date2 = dates[i2];
-              if (date2 < firstDateOfCurrentMonth) {
-                className2 += " tui-calendar-prev-month";
-              }
-              if (date2 > lastDateOfCurrentMonth) {
-                className2 += " tui-calendar-next-month";
-              }
-              if (date2.getDay() === 0) {
-                className2 += " tui-calendar-sun";
-              } else if (date2.getDay() === 6) {
-                className2 += " tui-calendar-sat";
-              }
-              contexts.push({
-                dayInMonth: date2.getDate(),
-                className: className2,
-                timestamp: date2.getTime()
-              });
-            }
-            return contexts;
-          },
-          render: function(date2, container) {
-            var context = this._makeContext(date2);
-            container.innerHTML = bodyTmpl(context);
-            this._element = container.firstChild;
-          },
-          getDateElements: function() {
-            return this._element.querySelectorAll(DATE_SELECTOR);
-          },
-          _getFirstWeek: function(year, month) {
-            var firstWeekDates = [];
-            var i2;
-            for (i2 = this.weekStartDay; i2 < DAYS_OF_WEEK + this.weekStartDay; i2 += 1) {
-              firstWeekDates.push(dateUtil.getDateOfWeek(year, month, -1, i2));
-            }
-            return this._getWeek(year, month, firstWeekDates);
           }
-        });
+        );
         function _isFirstWeek(weekIndex, dayInMonth) {
           return weekIndex || dayInMonth === 1 || dayInMonth > DAYS_OF_WEEK;
         }
@@ -4523,39 +4648,42 @@ var tuiTimePicker = { exports: {} };
         var TYPE_MONTH = __webpack_require__(1).TYPE_MONTH;
         var dateUtil = __webpack_require__(5);
         var DATE_SELECTOR = ".tui-calendar-month";
-        var MonthLayer = defineClass(LayerBase, {
-          init: function(language) {
-            LayerBase.call(this, language);
-          },
-          _type: TYPE_MONTH,
-          _makeContext: function(date2) {
-            var monthsShort = this._localeText.titles.MMM;
-            return {
-              year: date2.getFullYear(),
-              Jan: monthsShort[0],
-              Feb: monthsShort[1],
-              Mar: monthsShort[2],
-              Apr: monthsShort[3],
-              May: monthsShort[4],
-              Jun: monthsShort[5],
-              Jul: monthsShort[6],
-              Aug: monthsShort[7],
-              Sep: monthsShort[8],
-              Oct: monthsShort[9],
-              Nov: monthsShort[10],
-              Dec: monthsShort[11],
-              getFirstDayTimestamp: dateUtil.getFirstDayTimestamp
-            };
-          },
-          render: function(date2, container) {
-            var context = this._makeContext(date2);
-            container.innerHTML = bodyTmpl(context);
-            this._element = container.firstChild;
-          },
-          getDateElements: function() {
-            return this._element.querySelectorAll(DATE_SELECTOR);
+        var MonthLayer = defineClass(
+          LayerBase,
+          {
+            init: function(language) {
+              LayerBase.call(this, language);
+            },
+            _type: TYPE_MONTH,
+            _makeContext: function(date2) {
+              var monthsShort = this._localeText.titles.MMM;
+              return {
+                year: date2.getFullYear(),
+                Jan: monthsShort[0],
+                Feb: monthsShort[1],
+                Mar: monthsShort[2],
+                Apr: monthsShort[3],
+                May: monthsShort[4],
+                Jun: monthsShort[5],
+                Jul: monthsShort[6],
+                Aug: monthsShort[7],
+                Sep: monthsShort[8],
+                Oct: monthsShort[9],
+                Nov: monthsShort[10],
+                Dec: monthsShort[11],
+                getFirstDayTimestamp: dateUtil.getFirstDayTimestamp
+              };
+            },
+            render: function(date2, container) {
+              var context = this._makeContext(date2);
+              container.innerHTML = bodyTmpl(context);
+              this._element = container.firstChild;
+            },
+            getDateElements: function() {
+              return this._element.querySelectorAll(DATE_SELECTOR);
+            }
           }
-        });
+        );
         module2.exports = MonthLayer;
       },
       function(module2, exports2, __webpack_require__) {
@@ -4572,31 +4700,34 @@ var tuiTimePicker = { exports: {} };
         var TYPE_YEAR = __webpack_require__(1).TYPE_YEAR;
         var dateUtil = __webpack_require__(5);
         var DATE_SELECTOR = ".tui-calendar-year";
-        var YearLayer = defineClass(LayerBase, {
-          init: function(language) {
-            LayerBase.call(this, language);
-          },
-          _type: TYPE_YEAR,
-          _makeContext: function(date2) {
-            var year = date2.getFullYear();
-            return {
-              yearGroups: [
-                dateUtil.getRangeArr(year - 4, year - 2),
-                dateUtil.getRangeArr(year - 1, year + 1),
-                dateUtil.getRangeArr(year + 2, year + 4)
-              ],
-              getFirstDayTimestamp: dateUtil.getFirstDayTimestamp
-            };
-          },
-          render: function(date2, container) {
-            var context = this._makeContext(date2);
-            container.innerHTML = bodyTmpl(context);
-            this._element = container.firstChild;
-          },
-          getDateElements: function() {
-            return this._element.querySelectorAll(DATE_SELECTOR);
+        var YearLayer = defineClass(
+          LayerBase,
+          {
+            init: function(language) {
+              LayerBase.call(this, language);
+            },
+            _type: TYPE_YEAR,
+            _makeContext: function(date2) {
+              var year = date2.getFullYear();
+              return {
+                yearGroups: [
+                  dateUtil.getRangeArr(year - 4, year - 2),
+                  dateUtil.getRangeArr(year - 1, year + 1),
+                  dateUtil.getRangeArr(year + 2, year + 4)
+                ],
+                getFirstDayTimestamp: dateUtil.getFirstDayTimestamp
+              };
+            },
+            render: function(date2, container) {
+              var context = this._makeContext(date2);
+              container.innerHTML = bodyTmpl(context);
+              this._element = container.firstChild;
+            },
+            getDateElements: function() {
+              return this._element.querySelectorAll(DATE_SELECTOR);
+            }
           }
-        });
+        );
         module2.exports = YearLayer;
       },
       function(module2, exports2, __webpack_require__) {
@@ -4612,147 +4743,159 @@ var tuiTimePicker = { exports: {} };
         var isNumber2 = __webpack_require__(15);
         var Range = __webpack_require__(57);
         var util = __webpack_require__(4);
-        var RangeModel = defineClass({
-          init: function(ranges) {
-            ranges = ranges || [];
-            this._ranges = [];
-            forEachArray2(ranges, function(range2) {
-              this.add(range2[0], range2[1]);
-            }, this);
-          },
-          contains: function(start, end) {
-            var i2 = 0;
-            var length = this._ranges.length;
-            var range2;
-            for (; i2 < length; i2 += 1) {
-              range2 = this._ranges[i2];
-              if (range2.contains(start, end)) {
-                return true;
-              }
-            }
-            return false;
-          },
-          hasOverlap: function(start, end) {
-            var i2 = 0;
-            var length = this._ranges.length;
-            var range2;
-            for (; i2 < length; i2 += 1) {
-              range2 = this._ranges[i2];
-              if (range2.isOverlapped(start, end)) {
-                return true;
-              }
-            }
-            return false;
-          },
-          add: function(start, end) {
-            var overlapped = false;
-            var i2 = 0;
-            var len = this._ranges.length;
-            var range2;
-            for (; i2 < len; i2 += 1) {
-              range2 = this._ranges[i2];
-              overlapped = range2.isOverlapped(start, end);
-              if (overlapped) {
-                range2.merge(start, end);
-                break;
-              }
-              if (start < range2.start) {
-                break;
-              }
-            }
-            if (!overlapped) {
-              this._ranges.splice(i2, 0, new Range(start, end));
-            }
-          },
-          getMinimumValue: function() {
-            return this._ranges[0].start;
-          },
-          getMaximumValue: function() {
-            var length = this._ranges.length;
-            return this._ranges[length - 1].end;
-          },
-          exclude: function(start, end) {
-            if (!isNumber2(end)) {
-              end = start;
-            }
-            forEachArray2(this._ranges, function(range2) {
-              var rangeEnd;
-              if (range2.isOverlapped(start, end)) {
-                rangeEnd = range2.end;
-                range2.exclude(start, end);
-                if (end + 1 <= rangeEnd) {
-                  this.add(end + 1, rangeEnd);
+        var RangeModel = defineClass(
+          {
+            init: function(ranges) {
+              ranges = ranges || [];
+              this._ranges = [];
+              forEachArray2(
+                ranges,
+                function(range2) {
+                  this.add(range2[0], range2[1]);
+                },
+                this
+              );
+            },
+            contains: function(start, end) {
+              var i2 = 0;
+              var length = this._ranges.length;
+              var range2;
+              for (; i2 < length; i2 += 1) {
+                range2 = this._ranges[i2];
+                if (range2.contains(start, end)) {
+                  return true;
                 }
               }
-            }, this);
-            this._ranges = util.filter(this._ranges, function(range2) {
-              return !range2.isEmpty();
-            });
-          },
-          findOverlappedRange: function(start, end) {
-            var i2 = 0;
-            var len = this._ranges.length;
-            var range2;
-            for (; i2 < len; i2 += 1) {
-              range2 = this._ranges[i2];
-              if (range2.isOverlapped(start, end)) {
-                return [range2.start, range2.end];
+              return false;
+            },
+            hasOverlap: function(start, end) {
+              var i2 = 0;
+              var length = this._ranges.length;
+              var range2;
+              for (; i2 < length; i2 += 1) {
+                range2 = this._ranges[i2];
+                if (range2.isOverlapped(start, end)) {
+                  return true;
+                }
               }
+              return false;
+            },
+            add: function(start, end) {
+              var overlapped = false;
+              var i2 = 0;
+              var len = this._ranges.length;
+              var range2;
+              for (; i2 < len; i2 += 1) {
+                range2 = this._ranges[i2];
+                overlapped = range2.isOverlapped(start, end);
+                if (overlapped) {
+                  range2.merge(start, end);
+                  break;
+                }
+                if (start < range2.start) {
+                  break;
+                }
+              }
+              if (!overlapped) {
+                this._ranges.splice(i2, 0, new Range(start, end));
+              }
+            },
+            getMinimumValue: function() {
+              return this._ranges[0].start;
+            },
+            getMaximumValue: function() {
+              var length = this._ranges.length;
+              return this._ranges[length - 1].end;
+            },
+            exclude: function(start, end) {
+              if (!isNumber2(end)) {
+                end = start;
+              }
+              forEachArray2(
+                this._ranges,
+                function(range2) {
+                  var rangeEnd;
+                  if (range2.isOverlapped(start, end)) {
+                    rangeEnd = range2.end;
+                    range2.exclude(start, end);
+                    if (end + 1 <= rangeEnd) {
+                      this.add(end + 1, rangeEnd);
+                    }
+                  }
+                },
+                this
+              );
+              this._ranges = util.filter(this._ranges, function(range2) {
+                return !range2.isEmpty();
+              });
+            },
+            findOverlappedRange: function(start, end) {
+              var i2 = 0;
+              var len = this._ranges.length;
+              var range2;
+              for (; i2 < len; i2 += 1) {
+                range2 = this._ranges[i2];
+                if (range2.isOverlapped(start, end)) {
+                  return [range2.start, range2.end];
+                }
+              }
+              return null;
             }
-            return null;
           }
-        });
+        );
         module2.exports = RangeModel;
       },
       function(module2, exports2, __webpack_require__) {
         var defineClass = __webpack_require__(0);
         var isNumber2 = __webpack_require__(15);
-        var Range = defineClass({
-          init: function(start, end) {
-            this.setRange(start, end);
-          },
-          setRange: function(start, end) {
-            if (!isNumber2(end)) {
-              end = start;
-            }
-            this.start = Math.min(start, end);
-            this.end = Math.max(start, end);
-          },
-          merge: function(start, end) {
-            if (!isNumber2(start) || !isNumber2(end) || !this.isOverlapped(start, end)) {
-              return;
-            }
-            this.start = Math.min(start, this.start);
-            this.end = Math.max(end, this.end);
-          },
-          isEmpty: function() {
-            return !isNumber2(this.start) || !isNumber2(this.end);
-          },
-          setEmpty: function() {
-            this.start = this.end = null;
-          },
-          contains: function(start, end) {
-            if (!isNumber2(end)) {
-              end = start;
-            }
-            return this.start <= start && end <= this.end;
-          },
-          isOverlapped: function(start, end) {
-            if (!isNumber2(end)) {
-              end = start;
-            }
-            return this.start <= end && this.end >= start;
-          },
-          exclude: function(start, end) {
-            if (start <= this.start && end >= this.end) {
-              this.setEmpty();
-            } else if (this.contains(start)) {
-              this.setRange(this.start, start - 1);
-            } else if (this.contains(end)) {
-              this.setRange(end + 1, this.end);
+        var Range = defineClass(
+          {
+            init: function(start, end) {
+              this.setRange(start, end);
+            },
+            setRange: function(start, end) {
+              if (!isNumber2(end)) {
+                end = start;
+              }
+              this.start = Math.min(start, end);
+              this.end = Math.max(start, end);
+            },
+            merge: function(start, end) {
+              if (!isNumber2(start) || !isNumber2(end) || !this.isOverlapped(start, end)) {
+                return;
+              }
+              this.start = Math.min(start, this.start);
+              this.end = Math.max(end, this.end);
+            },
+            isEmpty: function() {
+              return !isNumber2(this.start) || !isNumber2(this.end);
+            },
+            setEmpty: function() {
+              this.start = this.end = null;
+            },
+            contains: function(start, end) {
+              if (!isNumber2(end)) {
+                end = start;
+              }
+              return this.start <= start && end <= this.end;
+            },
+            isOverlapped: function(start, end) {
+              if (!isNumber2(end)) {
+                end = start;
+              }
+              return this.start <= end && this.end >= start;
+            },
+            exclude: function(start, end) {
+              if (start <= this.start && end >= this.end) {
+                this.setEmpty();
+              } else if (this.contains(start)) {
+                this.setRange(this.start, start - 1);
+              } else if (this.contains(end)) {
+                this.setRange(end + 1, this.end);
+              }
             }
           }
-        });
+        );
         module2.exports = Range;
       },
       function(module2, exports2, __webpack_require__) {
@@ -4771,81 +4914,83 @@ var tuiTimePicker = { exports: {} };
         var mouseTouchEvent = __webpack_require__(19);
         var util = __webpack_require__(4);
         var DEFAULT_FORMAT = "yyyy-MM-dd";
-        var DatePickerInput = defineClass({
-          init: function(inputElement, option) {
-            option.format = option.format || DEFAULT_FORMAT;
-            this._input = util.getElement(inputElement);
-            this._id = option.id;
-            this._titles = option.localeText.titles;
-            this._formatter = new DateTimeFormatter(option.format, this._titles);
-            this._setEvents();
-          },
-          changeLocaleTitles: function(titles) {
-            this._titles = titles;
-          },
-          _setEvents: function() {
-            if (this._input) {
-              on2(this._input, "change", this._onChangeHandler, this);
-              mouseTouchEvent.on(this._input, "click", this._onClickHandler, this);
+        var DatePickerInput = defineClass(
+          {
+            init: function(inputElement, option) {
+              option.format = option.format || DEFAULT_FORMAT;
+              this._input = util.getElement(inputElement);
+              this._id = option.id;
+              this._titles = option.localeText.titles;
+              this._formatter = new DateTimeFormatter(option.format, this._titles);
+              this._setEvents();
+            },
+            changeLocaleTitles: function(titles) {
+              this._titles = titles;
+            },
+            _setEvents: function() {
+              if (this._input) {
+                on2(this._input, "change", this._onChangeHandler, this);
+                mouseTouchEvent.on(this._input, "click", this._onClickHandler, this);
+              }
+            },
+            _removeEvents: function() {
+              this.off();
+              if (this._input) {
+                off(this._input, "change", this._onChangeHandler);
+                mouseTouchEvent.off(this._input, "click", this._onClickHandler);
+              }
+            },
+            _onChangeHandler: function() {
+              this.fire("change");
+            },
+            _onClickHandler: function() {
+              this.fire("click");
+            },
+            is: function(el) {
+              return this._input === el;
+            },
+            enable: function() {
+              if (this._input) {
+                this._input.removeAttribute("disabled");
+              }
+            },
+            disable: function() {
+              if (this._input) {
+                this._input.setAttribute("disabled", true);
+              }
+            },
+            getFormat: function() {
+              return this._formatter.getRawString();
+            },
+            setFormat: function(format) {
+              if (!format) {
+                return;
+              }
+              this._formatter = new DateTimeFormatter(format, this._titles);
+            },
+            clearText: function() {
+              if (this._input) {
+                this._input.value = "";
+              }
+            },
+            setDate: function(date2) {
+              if (this._input) {
+                this._input.value = this._formatter.format(date2);
+              }
+            },
+            getDate: function() {
+              var value = "";
+              if (this._input) {
+                value = this._input.value;
+              }
+              return this._formatter.parse(value);
+            },
+            destroy: function() {
+              this._removeEvents();
+              this._input = this._id = this._formatter = null;
             }
-          },
-          _removeEvents: function() {
-            this.off();
-            if (this._input) {
-              off(this._input, "change", this._onChangeHandler);
-              mouseTouchEvent.off(this._input, "click", this._onClickHandler);
-            }
-          },
-          _onChangeHandler: function() {
-            this.fire("change");
-          },
-          _onClickHandler: function() {
-            this.fire("click");
-          },
-          is: function(el) {
-            return this._input === el;
-          },
-          enable: function() {
-            if (this._input) {
-              this._input.removeAttribute("disabled");
-            }
-          },
-          disable: function() {
-            if (this._input) {
-              this._input.setAttribute("disabled", true);
-            }
-          },
-          getFormat: function() {
-            return this._formatter.getRawString();
-          },
-          setFormat: function(format) {
-            if (!format) {
-              return;
-            }
-            this._formatter = new DateTimeFormatter(format, this._titles);
-          },
-          clearText: function() {
-            if (this._input) {
-              this._input.value = "";
-            }
-          },
-          setDate: function(date2) {
-            if (this._input) {
-              this._input.value = this._formatter.format(date2);
-            }
-          },
-          getDate: function() {
-            var value = "";
-            if (this._input) {
-              value = this._input.value;
-            }
-            return this._formatter.parse(value);
-          },
-          destroy: function() {
-            this._removeEvents();
-            this._input = this._id = this._formatter = null;
           }
-        });
+        );
         CustomEvents2.mixin(DatePickerInput);
         module2.exports = DatePickerInput;
       },
@@ -4864,185 +5009,202 @@ var tuiTimePicker = { exports: {} };
         var CLASS_NAME_RANGE_PICKER = "tui-rangepicker";
         var CLASS_NAME_SELECTED = constants.CLASS_NAME_SELECTED;
         var CLASS_NAME_SELECTED_RANGE = "tui-is-selected-range";
-        var DateRangePicker = defineClass({
-          init: function(options) {
-            var startpickerOpt, endpickerOpt;
-            options = options || {};
-            startpickerOpt = options.startpicker;
-            endpickerOpt = options.endpicker;
-            if (!startpickerOpt) {
-              throw new Error('The "startpicker" option is required.');
-            }
-            if (!endpickerOpt) {
-              throw new Error('The "endpicker" option is required.');
-            }
-            this._startpicker = null;
-            this._endpicker = null;
-            this._isRangeSet = false;
-            this._preEndPickerDate = new Date().getDate();
-            this._initializePickers(options);
-            this._syncRangesToEndpicker();
-          },
-          _initializePickers: function(options) {
-            var startpickerContainer = util.getElement(options.startpicker.container);
-            var endpickerContainer = util.getElement(options.endpicker.container);
-            var startInput = util.getElement(options.startpicker.input);
-            var endInput = util.getElement(options.endpicker.input);
-            var startpickerOpt = extend2({}, options, {
-              input: {
-                element: startInput,
-                format: options.format
-              },
-              date: options.startpicker.date,
-              weekStartDay: options.startpicker.weekStartDay
-            });
-            var endpickerOpt = extend2({}, options, {
-              input: {
-                element: endInput,
-                format: options.format
-              },
-              date: options.endpicker.date,
-              weekStartDay: options.endpicker.weekStartDay
-            });
-            this._startpicker = new DatePicker2(startpickerContainer, startpickerOpt);
-            this._startpicker.addCssClass(CLASS_NAME_RANGE_PICKER);
-            this._startpicker.on("change", this._onChangeStartpicker, this);
-            this._startpicker.on("draw", this._onDrawPicker, this);
-            this._endpicker = new DatePicker2(endpickerContainer, endpickerOpt);
-            this._endpicker.addCssClass(CLASS_NAME_RANGE_PICKER);
-            this._endpicker.on("change", this._onChangeEndpicker, this);
-            this._endpicker.on("draw", this._onDrawPicker, this);
-          },
-          _onDrawPicker: function(eventData) {
-            var calendarType = eventData.type;
-            var startDate = this._startpicker.getDate();
-            var endDate = this._endpicker.getDate();
-            if (!startDate) {
-              return;
-            }
-            if (!endDate) {
-              endDate = new Date(NaN);
-            }
-            forEachArray2(eventData.dateElements, function(el) {
-              var elDate = new Date(Number(getData(el, "timestamp")));
-              var isInRange = dateUtil.inRange(startDate, endDate, elDate, calendarType);
-              var isSelected = dateUtil.isSame(startDate, elDate, calendarType) || dateUtil.isSame(endDate, elDate, calendarType);
-              this._setRangeClass(el, isInRange);
-              this._setSelectedClass(el, isSelected);
-            }, this);
-          },
-          _setRangeClass: function(el, isInRange) {
-            if (isInRange) {
-              addClass(el, CLASS_NAME_SELECTED_RANGE);
-            } else {
-              removeClass(el, CLASS_NAME_SELECTED_RANGE);
-            }
-          },
-          _setSelectedClass: function(el, isSelected) {
-            if (isSelected) {
-              addClass(el, CLASS_NAME_SELECTED);
-            } else {
-              removeClass(el, CLASS_NAME_SELECTED);
-            }
-          },
-          _syncRangesToEndpicker: function() {
-            var startDate = this._startpicker.getDate();
-            var overlappedRange;
-            if (startDate) {
-              overlappedRange = this._startpicker.findOverlappedRange(dateUtil.cloneWithStartOf(startDate).getTime(), dateUtil.cloneWithEndOf(startDate).getTime());
-              this._endpicker.enable();
-              this._endpicker.setRanges([[startDate.getTime(), overlappedRange[1].getTime()]]);
-              this._setTimeRangeOnEndPicker();
-            } else {
-              this._endpicker.setNull();
-              this._endpicker.disable();
-            }
-          },
-          _onChangeStartpicker: function() {
-            this._syncRangesToEndpicker();
-            this.fire("change:start");
-          },
-          _onChangeEndpicker: function() {
-            var date2;
-            var endPickerDate = this._endpicker.getDate();
-            if (endPickerDate) {
-              date2 = endPickerDate.getDate();
-              if (this._preEndPickerDate !== date2) {
-                this._setTimeRangeOnEndPicker();
+        var DateRangePicker = defineClass(
+          {
+            init: function(options) {
+              var startpickerOpt, endpickerOpt;
+              options = options || {};
+              startpickerOpt = options.startpicker;
+              endpickerOpt = options.endpicker;
+              if (!startpickerOpt) {
+                throw new Error('The "startpicker" option is required.');
               }
-              this._preEndPickerDate = date2;
-            } else {
-              this._preEndPickerDate = null;
-            }
-            this.fire("change:end");
-          },
-          _setTimeRangeOnEndPicker: function() {
-            var pickerDate, timeRange;
-            var endTimePicker = this._endpicker._timePicker;
-            if (!endTimePicker) {
-              return;
-            }
-            pickerDate = this._endpicker.getDate() || this._startpicker.getDate();
-            timeRange = this._getTimeRangeFromStartPicker();
-            if (pickerDate && timeRange[pickerDate.getDate()]) {
-              endTimePicker.setRange(timeRange[pickerDate.getDate()]);
-              this._isRangeSet = true;
-            } else if (this._isRangeSet) {
-              endTimePicker.setRange({ hour: 0, minute: 0 });
-              endTimePicker.resetMinuteRange();
+              if (!endpickerOpt) {
+                throw new Error('The "endpicker" option is required.');
+              }
+              this._startpicker = null;
+              this._endpicker = null;
               this._isRangeSet = false;
+              this._preEndPickerDate = new Date().getDate();
+              this._initializePickers(options);
+              this._syncRangesToEndpicker();
+            },
+            _initializePickers: function(options) {
+              var startpickerContainer = util.getElement(options.startpicker.container);
+              var endpickerContainer = util.getElement(options.endpicker.container);
+              var startInput = util.getElement(options.startpicker.input);
+              var endInput = util.getElement(options.endpicker.input);
+              var startpickerOpt = extend2({}, options, {
+                input: {
+                  element: startInput,
+                  format: options.format
+                },
+                date: options.startpicker.date,
+                weekStartDay: options.startpicker.weekStartDay
+              });
+              var endpickerOpt = extend2({}, options, {
+                input: {
+                  element: endInput,
+                  format: options.format
+                },
+                date: options.endpicker.date,
+                weekStartDay: options.endpicker.weekStartDay
+              });
+              this._startpicker = new DatePicker2(startpickerContainer, startpickerOpt);
+              this._startpicker.addCssClass(CLASS_NAME_RANGE_PICKER);
+              this._startpicker.on("change", this._onChangeStartpicker, this);
+              this._startpicker.on("draw", this._onDrawPicker, this);
+              this._endpicker = new DatePicker2(endpickerContainer, endpickerOpt);
+              this._endpicker.addCssClass(CLASS_NAME_RANGE_PICKER);
+              this._endpicker.on("change", this._onChangeEndpicker, this);
+              this._endpicker.on("draw", this._onDrawPicker, this);
+            },
+            _onDrawPicker: function(eventData) {
+              var calendarType = eventData.type;
+              var startDate = this._startpicker.getDate();
+              var endDate = this._endpicker.getDate();
+              if (!startDate) {
+                return;
+              }
+              if (!endDate) {
+                endDate = new Date(NaN);
+              }
+              forEachArray2(
+                eventData.dateElements,
+                function(el) {
+                  var elDate = new Date(Number(getData(el, "timestamp")));
+                  var isInRange = dateUtil.inRange(startDate, endDate, elDate, calendarType);
+                  var isSelected = dateUtil.isSame(startDate, elDate, calendarType) || dateUtil.isSame(endDate, elDate, calendarType);
+                  this._setRangeClass(el, isInRange);
+                  this._setSelectedClass(el, isSelected);
+                },
+                this
+              );
+            },
+            _setRangeClass: function(el, isInRange) {
+              if (isInRange) {
+                addClass(el, CLASS_NAME_SELECTED_RANGE);
+              } else {
+                removeClass(el, CLASS_NAME_SELECTED_RANGE);
+              }
+            },
+            _setSelectedClass: function(el, isSelected) {
+              if (isSelected) {
+                addClass(el, CLASS_NAME_SELECTED);
+              } else {
+                removeClass(el, CLASS_NAME_SELECTED);
+              }
+            },
+            _syncRangesToEndpicker: function() {
+              var startDate = this._startpicker.getDate();
+              var overlappedRange;
+              if (startDate) {
+                overlappedRange = this._startpicker.findOverlappedRange(
+                  dateUtil.cloneWithStartOf(startDate).getTime(),
+                  dateUtil.cloneWithEndOf(startDate).getTime()
+                );
+                this._endpicker.enable();
+                this._endpicker.setRanges([[startDate.getTime(), overlappedRange[1].getTime()]]);
+                this._setTimeRangeOnEndPicker();
+              } else {
+                this._endpicker.setNull();
+                this._endpicker.disable();
+              }
+            },
+            _onChangeStartpicker: function() {
+              this._syncRangesToEndpicker();
+              this.fire("change:start");
+            },
+            _onChangeEndpicker: function() {
+              var date2;
+              var endPickerDate = this._endpicker.getDate();
+              if (endPickerDate) {
+                date2 = endPickerDate.getDate();
+                if (this._preEndPickerDate !== date2) {
+                  this._setTimeRangeOnEndPicker();
+                }
+                this._preEndPickerDate = date2;
+              } else {
+                this._preEndPickerDate = null;
+              }
+              this.fire("change:end");
+            },
+            _isStartAndEndDateSame: function() {
+              return !!this._endpicker.getDate() && !!this._startpicker.getDate() && dateUtil.compare(
+                this._endpicker.getDate(),
+                this._startpicker.getDate(),
+                constants.TYPE_DATE
+              ) === 0;
+            },
+            _setTimeRangeOnEndPicker: function() {
+              var pickerDate, timeRange, timeRangeToSet;
+              var endTimePicker = this._endpicker._timePicker;
+              if (!endTimePicker) {
+                return;
+              }
+              pickerDate = this._endpicker.getDate() || this._startpicker.getDate();
+              timeRange = this._getTimeRangeFromStartPicker();
+              timeRangeToSet = pickerDate && timeRange[pickerDate.getDate()];
+              if (this._isStartAndEndDateSame() && timeRangeToSet) {
+                endTimePicker.setRange(timeRangeToSet);
+                this._isRangeSet = true;
+              } else if (this._isRangeSet) {
+                endTimePicker.setRange({ hour: 0, minute: 0 });
+                endTimePicker.resetMinuteRange();
+                this._isRangeSet = false;
+              }
+            },
+            _getTimeRangeFromStartPicker: function() {
+              var startDate = this._startpicker.getDate();
+              var timeRange = {};
+              timeRange[startDate.getDate()] = {
+                hour: startDate.getHours(),
+                minute: startDate.getMinutes()
+              };
+              return timeRange;
+            },
+            getStartpicker: function() {
+              return this._startpicker;
+            },
+            getEndpicker: function() {
+              return this._endpicker;
+            },
+            setStartDate: function(date2) {
+              this._startpicker.setDate(date2);
+            },
+            getStartDate: function() {
+              return this._startpicker.getDate();
+            },
+            getEndDate: function() {
+              return this._endpicker.getDate();
+            },
+            setEndDate: function(date2) {
+              this._endpicker.setDate(date2);
+            },
+            setRanges: function(ranges) {
+              this._startpicker.setRanges(ranges);
+              this._syncRangesToEndpicker();
+            },
+            addRange: function(start, end) {
+              this._startpicker.addRange(start, end);
+              this._syncRangesToEndpicker();
+            },
+            removeRange: function(start, end, type) {
+              this._startpicker.removeRange(start, end, type);
+              this._syncRangesToEndpicker();
+            },
+            changeLanguage: function(language) {
+              this._startpicker.changeLanguage(language);
+              this._endpicker.changeLanguage(language);
+            },
+            destroy: function() {
+              this.off();
+              this._startpicker.destroy();
+              this._endpicker.destroy();
+              this._startpicker = this._endpicker = null;
             }
-          },
-          _getTimeRangeFromStartPicker: function() {
-            var startDate = this._startpicker.getDate();
-            var timeRange = {};
-            timeRange[startDate.getDate()] = {
-              hour: startDate.getHours(),
-              minute: startDate.getMinutes()
-            };
-            return timeRange;
-          },
-          getStartpicker: function() {
-            return this._startpicker;
-          },
-          getEndpicker: function() {
-            return this._endpicker;
-          },
-          setStartDate: function(date2) {
-            this._startpicker.setDate(date2);
-          },
-          getStartDate: function() {
-            return this._startpicker.getDate();
-          },
-          getEndDate: function() {
-            return this._endpicker.getDate();
-          },
-          setEndDate: function(date2) {
-            this._endpicker.setDate(date2);
-          },
-          setRanges: function(ranges) {
-            this._startpicker.setRanges(ranges);
-            this._syncRangesToEndpicker();
-          },
-          addRange: function(start, end) {
-            this._startpicker.addRange(start, end);
-            this._syncRangesToEndpicker();
-          },
-          removeRange: function(start, end, type) {
-            this._startpicker.removeRange(start, end, type);
-            this._syncRangesToEndpicker();
-          },
-          changeLanguage: function(language) {
-            this._startpicker.changeLanguage(language);
-            this._endpicker.changeLanguage(language);
-          },
-          destroy: function() {
-            this.off();
-            this._startpicker.destroy();
-            this._endpicker.destroy();
-            this._startpicker = this._endpicker = null;
           }
-        });
+        );
         CustomEvents2.mixin(DateRangePicker);
         module2.exports = DateRangePicker;
       },
